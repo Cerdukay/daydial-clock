@@ -1,0 +1,14 @@
+{
+  "name": "daydial-send-reminders",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Standalone scheduler-invoked job replacing the Supabase pg_cron -> send-reminders Edge Function pipeline. Not part of the Vite client bundle -- deploy/run this separately (see README.md in this directory).",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

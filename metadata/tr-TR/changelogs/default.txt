@@ -1,0 +1,12 @@
+İlk sürüm: DayDial v1.0
+
+• Renkli etkinlik yayları ile 24 saatlik radyal saat yüzü
+• Çakışan etkinlikler için çok katmanlı şeritler (4'e kadar)
+• Her tekrar için geçersiz kılma ile tekrarlayan etkinlikler
+• FCM push bildirimleri + yerel bildirim hatırlatıcıları
+• iCal (.ics) içe ve dışa aktarma (RFC 5545)
+• 14 dil desteği
+• localStorage ile misafir modu
+• Clerk + Neon Postgres ile bulut senkronizasyonu
+• Karanlık / Aydınlık / Sistem teması
+• Gizlilik öncelikli: analytics yok, reklam yok, takip yok

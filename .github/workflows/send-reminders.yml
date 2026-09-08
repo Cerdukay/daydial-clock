@@ -1,0 +1,30 @@
+name: send-reminders
+
+on:
+  schedule:
+    # Every minute, matching the original Supabase pg_cron cadence
+    # ("* * * * *") this replaces.
+    - cron: "* * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install job dependencies
+        working-directory: server/send-reminders
+        run: npm install --omit=dev
+
+      - name: Run send-reminders
+        working-directory: server/send-reminders
+        env:
+          DATABASE_URL: ${{ secrets.CLOCK_DATABASE_URL }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.CLOCK_FCM_SERVICE_ACCOUNT_JSON }}
+        run: node index.mjs

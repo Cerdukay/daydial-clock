@@ -1,0 +1,253 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * DayDial design system.
+ * Calm, premium, minimal. No gradients, no glassmorphism.
+ * All colors are oklch semantic tokens.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-3xl: calc(var(--radius) + 20px);
+
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-serif: "DM Serif Display", "Lora", Georgia, "Times New Roman", serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-now: var(--now);
+  --color-dial: var(--dial);
+  --color-dial-line: var(--dial-line);
+  --color-track: var(--track);
+  --color-primary-pressed: var(--primary-pressed);
+
+  --color-ev-yellow: var(--ev-yellow);
+  --color-ev-pink: var(--ev-pink);
+  --color-ev-cyan: var(--ev-cyan);
+  --color-ev-green: var(--ev-green);
+  --color-ev-violet: var(--ev-violet);
+  --color-ev-orange: var(--ev-orange);
+}
+
+:root {
+  --radius: 1rem;
+  /* #FAFAF8 */
+  --background: oklch(0.984 0.003 106);
+  /* #171717 */
+  --foreground: oklch(0.21 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0 0);
+  /* #6C4FD3 brand violet */
+  --primary: oklch(0.503 0.198 293);
+  --primary-foreground: oklch(0.995 0 0);
+  /* #5840B8 pressed */
+  --primary-pressed: oklch(0.437 0.185 292);
+  --secondary: oklch(0.964 0.003 106);
+  --secondary-foreground: oklch(0.21 0 0);
+  --muted: oklch(0.964 0.003 106);
+  /* #7A7A7A */
+  --muted-foreground: oklch(0.56 0 0);
+  --accent: oklch(0.955 0.004 106);
+  --accent-foreground: oklch(0.21 0 0);
+  --destructive: oklch(0.585 0.196 27.5);
+  --destructive-foreground: oklch(0.99 0 0);
+  /* #ECECEA */
+  --border: oklch(0.936 0.003 106);
+  --input: oklch(0.936 0.003 106);
+  --ring: oklch(0.56 0 0);
+  /* #E55545 */
+  --now: oklch(0.617 0.185 27.5);
+  --dial: oklch(1 0 0);
+  --dial-line: oklch(0.9 0.003 106);
+  --track: oklch(0.955 0.003 106);
+
+  /* Radial event label cards */
+  --label-card: oklch(1 0 0);
+  /* #DCDCD7 */
+  --label-card-border: oklch(0.881 0.005 106);
+  /* #202020 */
+  --label-title: oklch(0.245 0 0);
+  --arc-label-text: oklch(0.29 0.01 60);
+  /* #737373 */
+  --label-time: oklch(0.532 0 0);
+  --label-shadow: 0.1;
+
+  /* Light-theme event palette (pastel) */
+  --ev-yellow: oklch(0.905 0.105 92);
+  --ev-pink: oklch(0.835 0.082 16);
+  --ev-cyan: oklch(0.865 0.072 225);
+  --ev-green: oklch(0.885 0.082 162);
+  --ev-violet: oklch(0.82 0.09 295);
+  --ev-orange: oklch(0.855 0.1 62);
+  /* Ink used for the check inside a selected swatch */
+  --ev-check: oklch(0.21 0 0);
+
+  /* Per-hue ink for titles drawn inside a colored arc: each is a deep,
+     same-hue tone so contrast stays high on every pastel. */
+  --arc-text-yellow: oklch(0.34 0.06 92);
+  --arc-text-pink: oklch(0.33 0.06 16);
+  --arc-text-cyan: oklch(0.32 0.05 225);
+  --arc-text-green: oklch(0.32 0.05 162);
+  --arc-text-violet: oklch(0.31 0.07 295);
+  --arc-text-orange: oklch(0.33 0.06 62);
+}
+
+.dark {
+  --background: oklch(0.155 0.002 106);
+  --foreground: oklch(0.965 0.002 106);
+  --card: oklch(0.215 0.003 106);
+  --card-foreground: oklch(0.965 0.002 106);
+  --popover: oklch(0.215 0.003 106);
+  --popover-foreground: oklch(0.965 0.002 106);
+  --primary: oklch(0.585 0.195 293);
+  --primary-foreground: oklch(0.995 0 0);
+  --primary-pressed: oklch(0.52 0.19 292);
+  --secondary: oklch(0.255 0.003 106);
+  --secondary-foreground: oklch(0.965 0.002 106);
+  --muted: oklch(0.255 0.003 106);
+  --muted-foreground: oklch(0.815 0.003 106);
+  --accent: oklch(0.27 0.003 106);
+  --accent-foreground: oklch(0.965 0.002 106);
+  --destructive: oklch(0.65 0.19 27.5);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.375 0.004 106);
+  --input: oklch(0.345 0.004 106);
+  --ring: oklch(0.7 0.002 106);
+  --now: oklch(0.7 0.19 27.5);
+  --dial: oklch(0.235 0.003 106);
+  --dial-line: oklch(0.425 0.004 106);
+  --track: oklch(0.315 0.003 106);
+
+  /* Radial event label cards (dark) */
+  /* #202121 */
+  --label-card: oklch(0.248 0.002 106);
+  /* #3A3B3B */
+  --label-card-border: oklch(0.348 0.002 106);
+  /* #F5F5F3 */
+  --label-title: oklch(0.965 0.002 106);
+  --arc-label-text: oklch(0.965 0.002 106);
+  /* #AAAAA6 */
+  --label-time: oklch(0.72 0.003 106);
+  --label-shadow: 0.35;
+
+
+  /* Dark-theme event palette: deeper, more saturated so hues stay distinct
+     against the dark background (yellow especially). */
+  --ev-yellow: oklch(0.855 0.14 92);
+  --ev-pink: oklch(0.775 0.115 16);
+  --ev-cyan: oklch(0.795 0.1 225);
+  --ev-green: oklch(0.81 0.11 162);
+  --ev-violet: oklch(0.775 0.12 295);
+  --ev-orange: oklch(0.81 0.125 62);
+  --ev-check: oklch(0.185 0.003 106);
+
+  /* Dark-theme arcs stay light pastels, so inside-arc ink stays dark. */
+  --arc-text-yellow: oklch(0.3 0.07 92);
+  --arc-text-pink: oklch(0.29 0.07 16);
+  --arc-text-cyan: oklch(0.28 0.06 225);
+  --arc-text-green: oklch(0.28 0.06 162);
+  --arc-text-violet: oklch(0.27 0.08 295);
+  --arc-text-orange: oklch(0.29 0.07 62);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* Ensure text inputs work reliably on Capacitor Android WebView.
+     `manipulation` removes the 300ms tap delay so focus is instant,
+     and `user-select: text` guarantees the field is editable.
+     `pointer-events: auto` ensures inputs are always tappable even if
+     a parent has pointer-events: none. */
+  input,
+  textarea,
+  select {
+    touch-action: manipulation;
+    -webkit-user-select: text;
+    user-select: text;
+    pointer-events: auto;
+  }
+}
+
+/* Safe-area helpers for iOS / Android */
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+@utility px-safe {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+
+
+@utility touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@utility no-touch-pan {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}

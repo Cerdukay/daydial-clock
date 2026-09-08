@@ -1,0 +1,33 @@
+DayDial, günlük programını görsel bir saat yüzüne dönüştürür. Etkinlikler 24 saatlik bir kadran üzerinde renkli yaylar olarak görünür — taşımak için sürükle, yeniden boyutlandırmak için sıkıştır, gününü saniyeler içinde planla.
+
+★ RADYAL SAAT YÜZÜ
+Bütün günün tek ekranda. Sonsuz listeler yok, sıkışık ızgaralar yok — sadece her etkinliğin bir yay olduğu güzel bir analog saat.
+
+★ ÇOK KATMANLI ŞERİTLER
+Çakışan etkinlikler için 4'e kadar eş merkezli katman. Neyin neyle çakıştığını tahmin etmene gerek yok.
+
+★ TEKRARLAYAN ETKİNLİKLER
+Günlük, hafta içi, haftalık ve aylık tekrar, her tekrar için ayrı geçersiz kılma ile. Deseni bozmadan tek bir örneği değiştir.
+
+★ HATIRLATICILAR VE BİLDİRİMLER
+Etkinliği kaçırma. Kimlik doğrulamış kullanıcılar için FCM push bildirimleri, misafirler için yerel bildirimler.
+
+★ iCAL İÇE/DIŞA AKTARMA
+Tam RFC 5545 uyumlu .ics desteği. Google Calendar, Apple Calendar veya Outlook'tan içe aktar. Programını her yere dışa aktar.
+
+★ 14 DİL
+English, Türkçe, Español, Français, Deutsch, हिन्दी, Bahasa Indonesia, العربية, Русский, 中文, 日本語, 한국어, Italiano, Tiếng Việt, Português (BR).
+
+★ MİSAFİR MODU
+Anında planlamaya başla — hesap gerekmez. Verilerin tarayıcında kalır. İstediğin zaman bulut senkronizasyonuna geç.
+
+★ BULUT SENKRONİZASYONU
+Programını tüm cihazlarında senkronize etmek için giriş yap. Verilerin Row Level Security ile korunur — sadece sen erişebilirsin.
+
+★ KARANLIK / AYDINLIK / SİSTEM TEMASI
+Tercihine uyum sağlayan uyarlanabilir renk şemaları.
+
+DayDial gizlilik önceliklidir: analytics yok, reklam yok, takip yok. Verilerin senin.
+
+Gizlilik Politikası: https://daydial.app/privacy
+İletişim: privacy@daydial.app

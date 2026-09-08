@@ -1,0 +1,46 @@
+{
+  "dataSafety": [
+    {
+      "dataType": "Email address",
+      "dataTypeDetail": "Email address",
+      "collected": true,
+      "shared": false,
+      "purpose": "Account management",
+      "purposeDetail": "Authentication via Clerk",
+      "required": true,
+      "optionalOrRequired": "Required"
+    },
+    {
+      "dataType": "App activity",
+      "dataTypeDetail": "Other user-generated content",
+      "collected": true,
+      "shared": false,
+      "purpose": "App functionality",
+      "purposeDetail": "Calendar events, reminders, and user preferences stored in Neon Postgres",
+      "required": true,
+      "optionalOrRequired": "Required"
+    },
+    {
+      "dataType": "Device or other IDs",
+      "dataTypeDetail": "Device or other IDs",
+      "collected": true,
+      "shared": false,
+      "purpose": "App functionality",
+      "purposeDetail": "FCM push notification device tokens for reminder delivery",
+      "required": true,
+      "optionalOrRequired": "Required"
+    }
+  ],
+  "securityPractices": [
+    {
+      "practice": "Data is encrypted in transit",
+      "description": "All data is transmitted over HTTPS/TLS"
+    },
+    {
+      "practice": "Data can be deleted",
+      "description": "Users can delete their account and all associated data from Settings"
+    }
+  ],
+  "noDataCollected": false,
+  "noDataShared": true
+}

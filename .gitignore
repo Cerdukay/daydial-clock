@@ -1,0 +1,99 @@
+# Bu dosya 08.09.2026'da eklendi: proje o tarihe kadar hic git'e
+# girmemisti, dolayisiyla hicbir seyi haric tutmuyordu.
+# Depoya alinmadan once sir ve build ciktisi taramasi yapildi.
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+.env
+.env.*
+!.env.example
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# --- bagimliliklar ve build ciktilari ---
+node_modules/
+dist/
+build/
+out/
+.output/
+.vite/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# --- ortam degiskenleri: ORNEK dosyalar kalir, gercek degerler ASLA ---
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# --- editor / isletim sistemi ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- gunlukler ---
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# --- Android / Capacitor ---
+# Gradle onbellegi ve build ciktilari yuzlerce MB tutar ve yeniden uretilebilir.
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/src/main/assets/public/
+*.iml
+
+# IMZA MALZEMESI - asla depoya girmez.
+# Bir release keystore'u ele geciren, uygulama adina guncelleme imzalayabilir.
+*.jks
+*.keystore
+keystore.properties
+android/keystore.properties
+
+# Yayin paketleri (her build'de yeniden uretilir)
+*.aab
+*.apk
+
+# --- QA cihaz dokumleri (99 MB) ---
+# logcat, dumpsys ve video kareleri: kaynak degil, uretilmis tani ciktisi.
+# Ayrica cihaz dumplarinda GMS anahtarlari gecebiliyor.
+qa/
+
+# --- yayin arsivi (29 MB) ---
+release/
+
+# bundletool gibi indirilen araclar
+*.jar

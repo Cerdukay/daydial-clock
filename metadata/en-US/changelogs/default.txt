@@ -1,0 +1,7 @@
+What's new in 1.0.5:
+
+• Home screen widget — see the current time and your next event at a glance
+• Notification sound customization — choose from 5 built-in sounds or silence
+• New repeat options — biweekly (every 2 weeks) and annual (every year)
+• End recurring events after N occurrences, not just by date
+• Bug fixes for touch responsiveness and menu interactions

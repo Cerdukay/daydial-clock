@@ -1,0 +1,33 @@
+DayDial turns your daily schedule into a visual clock face. Events appear as colorful arcs around a 24-hour dial — drag to move, pinch to resize, and plan your day in seconds.
+
+★ RADIAL CLOCK FACE
+Your entire day on one screen. No endless lists, no cramped grids — just a beautiful analog clock where every event is an arc.
+
+★ MULTI-LAYER LANES
+Up to 4 concentric layers handle overlapping events gracefully. No more guessing what conflicts with what.
+
+★ RECURRING EVENTS
+Daily, weekdays, weekly, and monthly recurrence with per-occurrence overrides. Change one instance without breaking the pattern.
+
+★ REMINDERS & PUSH NOTIFICATIONS
+Never miss an event. FCM push notifications for authenticated users, local notifications for guests.
+
+★ iCAL IMPORT / EXPORT
+Full RFC 5545 compatible .ics support. Import from Google Calendar, Apple Calendar, or Outlook. Export your schedule anywhere.
+
+★ 14 LANGUAGES
+English, Türkçe, Español, Français, Deutsch, हिन्दी, Bahasa Indonesia, العربية, Русский, 中文, 日本語, 한국어, Italiano, Tiếng Việt, Português (BR).
+
+★ GUEST MODE
+Start planning instantly — no account required. Your data stays in your browser. Upgrade to cloud sync anytime.
+
+★ CLOUD SYNC
+Sign in to sync your schedule across all your devices. Your data is protected by Row Level Security — only you can access it.
+
+★ DARK / LIGHT / SYSTEM THEME
+Adaptive color schemes that match your preference.
+
+DayDial is privacy-first: no analytics, no ads, no tracking. Your data is yours.
+
+Privacy Policy: https://daydial.app/privacy
+Contact: privacy@daydial.app

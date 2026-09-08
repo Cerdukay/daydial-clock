@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DayDial</string>
+    <string name="title_activity_main">DayDial</string>
+    <string name="package_name">com.daydial.app</string>
+    <string name="custom_url_scheme">com.daydial.app</string>
+    <string name="widget_description">Shows the current time and your next event at a glance.</string>
+    <string name="widget_no_events">No events today</string>
+    <string name="widget_events_count">%1$d events today</string>
+    <string name="widget_next_label">Next: %1$s at %2$s</string>
+</resources>

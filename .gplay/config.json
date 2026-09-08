@@ -1,0 +1,15 @@
+{
+  "default_profile": "default",
+  "profiles": [
+    {
+      "name": "default",
+      "type": "service_account",
+      "key_path": "C:\\Users\\PC1\\Downloads\\saatplanlayici-firebase-adminsdk-fbsvc-505125ff9a.json"
+    }
+  ],
+  "timeout": "",
+  "timeout_seconds": "",
+  "upload_timeout": "",
+  "upload_timeout_seconds": "",
+  "debug": ""
+}

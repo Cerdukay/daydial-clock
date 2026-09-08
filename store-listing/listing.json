@@ -1,0 +1,11 @@
+{
+  "title": "DayDial — Radial Daily Planner",
+  "short_description": "See your whole day as colorful arcs on an analog clock.",
+  "full_description": "DayDial turns your daily schedule into a visual clock face. Events appear as colorful arcs around a 24-hour dial — drag to move, pinch to resize, and plan your day in seconds.\n\n★ RADIAL CLOCK FACE\nYour entire day on one screen. No endless lists, no cramped grids — just a beautiful analog clock where every event is an arc.\n\n★ MULTI-LAYER LANES\nUp to 4 concentric layers handle overlapping events gracefully. No more guessing what conflicts with what.\n\n★ RECURRING EVENTS\nDaily, weekdays, weekly, and monthly recurrence with per-occurrence overrides. Change one instance without breaking the pattern.\n\n★ REMINDERS & PUSH NOTIFICATIONS\nNever miss an event. FCM push notifications for authenticated users, local notifications for guests.\n\n★ iCAL IMPORT / EXPORT\nFull RFC 5545 compatible .ics support. Import from Google Calendar, Apple Calendar, or Outlook. Export your schedule anywhere.\n\n★ 14 LANGUAGES\nEnglish, Türkçe, Español, Français, Deutsch, हिन्दी, Bahasa Indonesia, العربية, Русский, 中文, 日本語, 한국어, Italiano, Tiếng Việt, Português (BR).\n\n★ GUEST MODE\nStart planning instantly — no account required. Your data stays in your browser. Upgrade to cloud sync anytime.\n\n★ CLOUD SYNC\nSign in with Clerk to sync your schedule across all your devices. Your data is protected by Row Level Security — only you can access it.\n\n★ DARK / LIGHT / SYSTEM THEME\nAdaptive color schemes that match your preference.\n\n★ PWA + ANDROID NATIVE\nInstall as a Progressive Web App or download the native Android app for the best experience.\n\nDayDial is privacy-first: no analytics, no ads, no tracking. Your data is yours.\n\n---\nPrivacy Policy: https://daydial.app/privacy\nContact: privacy@daydial.app",
+  "category": "PRODUCTIVITY",
+  "content_rating": "everyone",
+  "target_audience": "all",
+  "contains_ads": false,
+  "contains_in_app_purchases": false,
+  "privacy_policy_url": "https://daydial.app/privacy"
+}
