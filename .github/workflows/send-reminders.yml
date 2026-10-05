@@ -1,22 +1,38 @@
 name: send-reminders
 
 on:
-  schedule:
-    # Every minute, matching the original Supabase pg_cron cadence
-    # ("* * * * *") this replaces.
-    - cron: "* * * * *"
+  # Automatic scheduling is intentionally paused while the required server
+  # secrets are not configured. Re-enable it only after both secrets listed in
+  # server/send-reminders/README.md have been added to the repository.
   workflow_dispatch: {}
 
 jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    env:
+      DATABASE_URL: ${{ secrets.CLOCK_DATABASE_URL }}
+      FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.CLOCK_FCM_SERVICE_ACCOUNT_JSON }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          missing=()
+          [[ -z "$DATABASE_URL" ]] && missing+=("CLOCK_DATABASE_URL")
+          [[ -z "$FCM_SERVICE_ACCOUNT_JSON" ]] && missing+=("CLOCK_FCM_SERVICE_ACCOUNT_JSON")
 
-      - uses: actions/setup-node@v4
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing required repository secrets: ${missing[*]}"
+            echo "Automatic scheduling remains disabled. See server/send-reminders/README.md."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
+          package-manager-cache: false
 
       - name: Install job dependencies
         working-directory: server/send-reminders
@@ -24,7 +40,4 @@ jobs:
 
       - name: Run send-reminders
         working-directory: server/send-reminders
-        env:
-          DATABASE_URL: ${{ secrets.CLOCK_DATABASE_URL }}
-          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.CLOCK_FCM_SERVICE_ACCOUNT_JSON }}
         run: node index.mjs
