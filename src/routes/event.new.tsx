@@ -19,12 +19,12 @@ export const Route = createFileRoute("/event/new")({
   }),
   head: () => ({
     meta: [
-      { title: "New event — DayDial" },
+      { title: "New event — Arcelira" },
       {
         name: "description",
         content: "Sketch a new time block on the dial, then name it, color it and save.",
       },
-      { property: "og:title", content: "New event — DayDial" },
+      { property: "og:title", content: "New event — Arcelira" },
       { property: "og:description", content: "Create a time block on your radial day planner." },
     ],
   }),
@@ -56,6 +56,7 @@ function NewEventScreen() {
     // A newly-created event should remind the user at its start by default.
     // Users can still choose "No reminder" in the expanded editor.
     reminderMinutes: 0,
+    reminderDelivery: "notification",
     repeat: "none",
     repeatUntil: null,
     repeatCount: 0,

@@ -6,8 +6,14 @@ import { polarToPoint } from "@/lib/daydial/radial";
  * ring so it stays visually secondary to the event arcs and can't be mistaken
  * for a drag handle.
  */
-export function CurrentTimeHand({ minutes }: { minutes: number }) {
-  const angle = ((minutes % 720) / 720) * 360;
+export function CurrentTimeHand({
+  minutes,
+  minutesPerTurn = 720,
+}: {
+  minutes: number;
+  minutesPerTurn?: number;
+}) {
+  const angle = ((minutes % minutesPerTurn) / minutesPerTurn) * 360;
   const outer = LANE_RADII[LANE_RADII.length - 1]!;
   const end = polarToPoint(CX, CY, outer, angle);
   const tail = polarToPoint(CX, CY, -8, angle);

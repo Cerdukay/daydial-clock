@@ -57,17 +57,18 @@ export function sanitizeTitle(raw: string | null | undefined): string {
 export function shortenTitle(title: string, max: number): string | null {
   const clean = sanitizeTitle(title);
   if (clean.length <= max) return clean;
+  if (max < 2) return null;
 
   const words = clean.split(" ");
   let out = "";
   for (const word of words) {
     const next = out ? `${out} ${word}` : word;
-    if (next.length > max) break;
+    // Keep one character free for the ellipsis whenever text is truncated.
+    if (next.length > max - 1) break;
     out = next;
   }
-  if (out.length >= 4) return out;
-  if (max >= 6) return `${clean.slice(0, max - 1).trimEnd()}…`;
-  return null;
+  if (out.length >= 4) return `${out}…`;
+  return `${clean.slice(0, max - 1).trimEnd()}…`;
 }
 
 /** Screen positions of the 1-12 hour numbers, used to keep labels clear of them. */
@@ -110,6 +111,7 @@ export function planLabels(
   lanes: LaneResult,
   dayStart?: Date,
   timeFormat: "12h" | "24h" = "12h",
+  minutesPerTurn = 720,
 ): {
   labels: LabelPlan[];
   labeledIds: Set<string>;
@@ -158,7 +160,7 @@ export function planLabels(
       : CARD_HEIGHT;
 
     // Sit just outside the arc; crowded cards are pushed farther outward.
-    const angle = minutesToAngle((segment.startMin + segment.endMin) / 2);
+    const angle = minutesToAngle((segment.startMin + segment.endMin) / 2, minutesPerTurn);
     const baseRadius =
       trackRadius(segment.lane, segment.subTrack, segment.split) +
       trackThickness(segment.split) / 2 +
@@ -225,19 +227,31 @@ export interface InsideLabelPlan {
   muted: boolean;
 }
 
-/** Text metrics for arc-inline labels (font-size 11.5, semibold — never below 11). */
+/** Text metrics for arc-inline labels. */
 const INSIDE_FONT = 11.5;
-const INSIDE_CHAR = 6.2;
-const INSIDE_PAD = 10;
+/** Compact type used when a short event only has room for a few glyphs. */
+const SHORT_INSIDE_FONT = 8.5;
+// A deliberately conservative width keeps wide glyphs (M, W and Turkish
+// capitals) inside short arcs instead of letting the text touch the ends.
+const INSIDE_CHAR = 6.8;
+const SHORT_INSIDE_CHAR = 4.9;
+const INSIDE_PAD = 12;
+const SHORT_INSIDE_PAD = 1.5;
 /** Events at or above this may show their full title inside the arc. */
 const INSIDE_FULL_MINUTES = 60;
 /** Below this sweep the text curves too steeply to stay readable. */
 const MIN_INSIDE_SWEEP = 12;
 
 /** Angular band a piece of text occupies on its lane, centred on the arc. */
-function textBand(startMin: number, endMin: number, radius: number, textWidth: number) {
-  const startAngle = minutesToAngle(startMin);
-  const sweep = (minutesToAngle(endMin) - startAngle + 360) % 360;
+function textBand(
+  startMin: number,
+  endMin: number,
+  radius: number,
+  textWidth: number,
+  minutesPerTurn: number,
+) {
+  const startAngle = minutesToAngle(startMin, minutesPerTurn);
+  const sweep = (minutesToAngle(endMin, minutesPerTurn) - startAngle + 360) % 360;
   const mid = (startAngle + sweep / 2 + 360) % 360;
   const half = ((textWidth / 2) * 180) / (Math.PI * radius);
   return { mid, half };
@@ -258,7 +272,10 @@ function bandsOverlap(
  * it fits; shorter events stay arc-only. Times are never rendered inside an
  * arc — they live in the event preview and Upcoming cards.
  */
-export function planInsideLabels(lanes: LaneResult): {
+export function planInsideLabels(
+  lanes: LaneResult,
+  minutesPerTurn = 720,
+): {
   labels: InsideLabelPlan[];
   labeledIds: Set<string>;
 } {
@@ -276,32 +293,39 @@ export function planInsideLabels(lanes: LaneResult): {
 
   for (const segment of ordered) {
     const duration = segment.endMin - segment.startMin;
-    if (duration < MIN_LABEL_MINUTES) continue;
     if (labeledIds.has(segment.event.id)) continue;
     // A split lane band is too thin to carry readable text inside the arc.
     if (segment.split) continue;
 
     const radius = trackRadius(segment.lane, segment.subTrack, segment.split);
 
-    const sweep = (minutesToAngle(segment.endMin) - minutesToAngle(segment.startMin) + 360) % 360;
-    // Very narrow wedges rotate the text near-vertically — arc only.
-    if (sweep < MIN_INSIDE_SWEEP) continue;
+    const sweep =
+      (minutesToAngle(segment.endMin, minutesPerTurn) -
+        minutesToAngle(segment.startMin, minutesPerTurn) +
+        360) %
+      360;
+    const isShort = duration < MIN_LABEL_MINUTES;
+    // Short events use compact type; arcs narrower than this still cannot
+    // carry two readable glyphs and remain arc-only.
+    if (sweep < (isShort ? 6 : MIN_INSIDE_SWEEP)) continue;
     const arcLength = (sweep * Math.PI * radius) / 180;
-    const available = arcLength - INSIDE_PAD * 2;
-    const maxChars = Math.floor(available / INSIDE_CHAR);
-    if (maxChars < 4) continue;
+    const charWidth = isShort ? SHORT_INSIDE_CHAR : INSIDE_CHAR;
+    const edgePadding = isShort ? SHORT_INSIDE_PAD : INSIDE_PAD;
+    const available = arcLength - edgePadding * 2;
+    const maxChars = Math.floor(available / charWidth);
+    if (maxChars < (isShort ? 2 : 4)) continue;
 
     // Long events may show the whole title; medium ones only a short form.
-    const cap = duration >= INSIDE_FULL_MINUTES ? 22 : 10;
+    const cap = duration >= INSIDE_FULL_MINUTES ? 22 : isShort ? 5 : 10;
     const text = shortenTitle(segment.event.title, Math.min(maxChars, cap));
     if (!text) continue;
-    const textWidth = text.length * INSIDE_CHAR;
+    const textWidth = text.length * charWidth;
     // Never let the text spill past the ends of its colored shape.
     if (textWidth > available) continue;
 
     // Titles on the same lane, or on adjacent lanes where the rings are close
     // enough to read as one band, may never share angular space.
-    const band = textBand(segment.startMin, segment.endMin, radius, textWidth);
+    const band = textBand(segment.startMin, segment.endMin, radius, textWidth, minutesPerTurn);
     const collides = placed.some(
       (item) => Math.abs(item.lane - segment.lane) === 0 && bandsOverlap(item.band, band),
     );
@@ -324,4 +348,4 @@ export function planInsideLabels(lanes: LaneResult): {
   return { labels, labeledIds };
 }
 
-export { INSIDE_FONT };
+export { INSIDE_FONT, SHORT_INSIDE_FONT };

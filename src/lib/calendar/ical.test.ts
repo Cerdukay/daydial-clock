@@ -34,7 +34,7 @@ describe("exportToICal", () => {
     expect(ics).toContain("BEGIN:VCALENDAR");
     expect(ics).toContain("END:VCALENDAR");
     expect(ics).toContain("VERSION:2.0");
-    expect(ics).toContain("PRODID:-//DayDial//Radial Daily Planner//EN");
+    expect(ics).toContain("PRODID:-//Arcelira//Radial Daily Planner//EN");
   });
 
   it("emits a VEVENT with the correct UID and timestamps", () => {

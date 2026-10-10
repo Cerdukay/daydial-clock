@@ -9,10 +9,10 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set a new password — DayDial" },
-      { name: "description", content: "Choose a new password for your DayDial account." },
-      { property: "og:title", content: "Set a new password — DayDial" },
-      { property: "og:description", content: "Choose a new password for your DayDial account." },
+      { title: "Set a new password — Arcelira" },
+      { name: "description", content: "Choose a new password for your Arcelira account." },
+      { property: "og:title", content: "Set a new password — Arcelira" },
+      { property: "og:description", content: "Choose a new password for your Arcelira account." },
     ],
   }),
   component: ResetPasswordScreen,

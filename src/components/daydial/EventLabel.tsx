@@ -1,7 +1,7 @@
 import { colorVar, type EventColor } from "@/lib/daydial/types";
 import { CX, CY } from "@/lib/daydial/geometry";
 import { minutesToAngle, polarToPoint } from "@/lib/daydial/radial";
-import { INSIDE_FONT } from "@/lib/daydial/labels";
+import { INSIDE_FONT, MIN_LABEL_MINUTES, SHORT_INSIDE_FONT } from "@/lib/daydial/labels";
 
 interface EventLabelProps {
   /** Card centre in viewBox units. */
@@ -16,6 +16,7 @@ interface EventLabelProps {
   muted?: boolean;
   /** Narrow cards render their title turned 90°. */
   rotated?: boolean;
+  allowPageScroll?: boolean;
   onPointerDown?: ((e: React.PointerEvent<SVGGElement>) => void) | undefined;
 }
 
@@ -50,6 +51,7 @@ export function EventLabel({
   color,
   muted = false,
   rotated = false,
+  allowPageScroll = false,
   onPointerDown,
 }: EventLabelProps) {
   const left = x - width / 2;
@@ -62,7 +64,11 @@ export function EventLabel({
       filter="url(#dd-label-shadow)"
       onPointerDown={onPointerDown}
       pointerEvents={onPointerDown ? "auto" : "none"}
-      style={onPointerDown ? { cursor: "pointer", touchAction: "none" } : undefined}
+      style={
+        onPointerDown
+          ? { cursor: "pointer", touchAction: allowPageScroll ? "pan-y" : "none" }
+          : undefined
+      }
       aria-hidden="true"
     >
       <rect
@@ -134,6 +140,7 @@ interface ArcInlineLabelProps {
   text: string;
   color: EventColor;
   muted?: boolean;
+  minutesPerTurn?: number;
 }
 
 function arcTextPath(radius: number, startAngle: number, endAngle: number, flip: boolean) {
@@ -163,9 +170,11 @@ export function ArcInlineLabel({
   text,
   color,
   muted = false,
+  minutesPerTurn = 720,
 }: ArcInlineLabelProps) {
-  const startAngle = minutesToAngle(startMin);
-  const endAngle = minutesToAngle(endMin);
+  const duration = endMin - startMin;
+  const startAngle = minutesToAngle(startMin, minutesPerTurn);
+  const endAngle = minutesToAngle(endMin, minutesPerTurn);
   const mid = (startAngle + ((endAngle - startAngle + 360) % 360) / 2) % 360;
   const flip = mid > 90 && mid < 270;
   const pathId = `dd-arc-text-${id}`;
@@ -176,7 +185,7 @@ export function ArcInlineLabel({
         <path id={pathId} d={arcTextPath(radius, startAngle, endAngle, flip)} fill="none" />
       </defs>
       <text
-        fontSize={INSIDE_FONT}
+        fontSize={duration < MIN_LABEL_MINUTES ? SHORT_INSIDE_FONT : INSIDE_FONT}
         fontWeight={600}
         fill={`var(--arc-text-${color})`}
         opacity={muted ? 0.6 : 1}

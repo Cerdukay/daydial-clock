@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { addMinutes, differenceInMinutes, startOfDay } from "date-fns";
-import { ArrowLeft } from "lucide-react";
+import { AlarmClock, ArrowLeft, BellRing } from "lucide-react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { NativeSelect } from "@/components/ui/native-select";
 import { format as formatDate } from "date-fns";
-import type { EventDraft, PlannerEvent } from "@/lib/daydial/types";
+import type { EventDraft, PlannerEvent, ReminderDelivery } from "@/lib/daydial/types";
 import { RadialClock } from "./RadialClock";
 import { TimeRangeDisplay } from "./TimeRangeDisplay";
 import { EventBottomSheet } from "./EventBottomSheet";
@@ -24,6 +25,12 @@ import { RepeatRulePicker } from "./RepeatRulePicker";
 import { LaneSelector } from "./LaneSelector";
 import { useI18n } from "@/lib/i18n";
 import { dismissVirtualKeyboard } from "@/lib/daydial/keyboard";
+import {
+  isCapacitorNative,
+  requestExactNotificationPermission,
+  requestNotificationPermission,
+} from "@/lib/notifications";
+import { isIosNative } from "@/lib/notifications/ios-alarms";
 
 interface EventEditorProps {
   mode: "create" | "edit";
@@ -48,13 +55,15 @@ export function EventEditor({
   onDelete,
   onCancel,
 }: EventEditorProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [draft, setDraft] = useState<EventDraft>(initial);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const saveAttemptRef = useRef(false);
   const leavingRef = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deliveryPromptOpen, setDeliveryPromptOpen] = useState(false);
   const [errors, setErrors] = useState<{ title?: string | undefined; time?: string | undefined }>(
     {},
   );
@@ -86,6 +95,7 @@ export function EventEditor({
         location: "",
         notes: "",
         reminderMinutes: -1,
+        reminderDelivery: "notification",
         repeat: "none",
         repeatUntil: null,
         repeatCount: 0,
@@ -107,8 +117,48 @@ export function EventEditor({
     [day, patch],
   );
 
-  const handleSave = async () => {
+  const alarmPermissionCopy =
+    language === "tr"
+      ? {
+          notification: "Alarm için Android bildirim iznini etkinleştirin.",
+          exact:
+            "Alarmın tam saatinde çalması için Alarmlar ve hatırlatıcılar iznini etkinleştirin.",
+          ios: "Alarm için iOS 26 veya üzeri ve Ayarlar'da Arcelira alarm izni gerekir.",
+        }
+      : {
+          notification: "Enable Android notifications to use event alarms.",
+          exact: "Enable Alarms & reminders so the event alarm can ring at the exact time.",
+          ios: "Event alarms require iOS 26 or later and Arcelira alarm access in Settings.",
+        };
+
+  const saveDraft = async (reminderDelivery: ReminderDelivery) => {
     if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      if (reminderDelivery === "alarm" && draft.reminderMinutes >= 0 && isCapacitorNative()) {
+        if (!isIosNative()) {
+          const notificationPermission = await requestNotificationPermission();
+          if (notificationPermission !== "granted") {
+            toast.error(alarmPermissionCopy.notification);
+            return;
+          }
+        }
+        const exactAlarmPermission = await requestExactNotificationPermission();
+        if (!exactAlarmPermission) {
+          toast.error(isIosNative() ? alarmPermissionCopy.ios : alarmPermissionCopy.exact);
+          return;
+        }
+      }
+      await onSave({ ...draft, title: draft.title.trim(), reminderDelivery });
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (savingRef.current || saveAttemptRef.current) return;
     const nextErrors: { title?: string | undefined; time?: string | undefined } = {};
     if (draft.title.trim().length === 0) nextErrors.title = t("editor.titleRequired");
     if (differenceInMinutes(end, start) < MIN_DURATION) {
@@ -119,16 +169,41 @@ export function EventEditor({
       if (nextErrors.title) setExpanded(false);
       return;
     }
-    savingRef.current = true;
-    setSaving(true);
+    saveAttemptRef.current = true;
+    await dismissVirtualKeyboard();
+    if (mode === "create" && draft.reminderMinutes >= 0) {
+      setDeliveryPromptOpen(true);
+      return;
+    }
     try {
-      await dismissVirtualKeyboard();
-      await onSave({ ...draft, title: draft.title.trim() });
+      await saveDraft(draft.reminderDelivery);
     } finally {
-      savingRef.current = false;
-      setSaving(false);
+      saveAttemptRef.current = false;
     }
   };
+
+  const deliveryCopy =
+    language === "tr"
+      ? {
+          title: "Hatırlatıcı nasıl gelsin?",
+          body: "Etkinlik için normal bildirim veya yüksek öncelikli alarm seçin.",
+          notification: "Bildirim",
+          notificationHint: "Sessiz ya da seçtiğiniz bildirim sesiyle gösterilir.",
+          alarm: "Alarm",
+          alarmHint: isIosNative()
+            ? "iOS 26+ üzerinde alarm izniyle sessiz modda da çalar."
+            : "Android'de yüksek öncelikli sesli ve titreşimli olarak çalar.",
+        }
+      : {
+          title: "How should this reminder arrive?",
+          body: "Choose a standard notification or a high-priority alarm for this event.",
+          notification: "Notification",
+          notificationHint: "Shown with your selected notification sound.",
+          alarm: "Alarm",
+          alarmHint: isIosNative()
+            ? "On iOS 26+, authorized alarms also ring in silent mode."
+            : "Rings with high priority and vibration on Android.",
+        };
 
   const handleCancel = async () => {
     if (leavingRef.current) return;
@@ -410,6 +485,60 @@ export function EventEditor({
             >
               {t("common.delete")}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deliveryPromptOpen}
+        onOpenChange={(open) => {
+          setDeliveryPromptOpen(open);
+          if (!open) saveAttemptRef.current = false;
+        }}
+      >
+        <AlertDialogContent className="max-w-[360px] rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{deliveryCopy.title}</AlertDialogTitle>
+            <AlertDialogDescription>{deliveryCopy.body}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-2xl border border-border p-3 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                setDeliveryPromptOpen(false);
+                saveAttemptRef.current = false;
+                void saveDraft("notification");
+              }}
+            >
+              <BellRing className="size-5 text-primary" aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{deliveryCopy.notification}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {deliveryCopy.notificationHint}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                setDeliveryPromptOpen(false);
+                saveAttemptRef.current = false;
+                void saveDraft("alarm");
+              }}
+            >
+              <AlarmClock className="size-5 text-primary" aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{deliveryCopy.alarm}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {deliveryCopy.alarmHint}
+                </span>
+              </span>
+            </button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">{t("common.back")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

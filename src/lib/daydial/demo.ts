@@ -55,6 +55,7 @@ export function createDemoEvents(reference: Date = new Date()): PlannerEvent[] {
     location: seed.location ?? "",
     notes: "",
     reminderMinutes: seed.title === "Arena" ? 15 : -1,
+    reminderDelivery: "notification",
     repeat: "none",
     repeatUntil: null,
     repeatCount: 0,

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth as useClerkAuth, useUser } from "@clerk/react";
+import { toast } from "sonner";
 
 /**
  * Safe wrappers around Clerk hooks that gracefully degrade to guest mode
@@ -133,6 +134,7 @@ function readLocalEvents(): PlannerEvent[] {
     if (raw) {
       return (JSON.parse(raw) as PlannerEvent[]).map((event) => ({
         ...event,
+        reminderDelivery: event.reminderDelivery === "alarm" ? "alarm" : "notification",
         repeatUntil: event.repeatUntil ?? null,
         repeatCount: event.repeatCount ?? 0,
       }));
@@ -143,7 +145,7 @@ function readLocalEvents(): PlannerEvent[] {
     window.localStorage.setItem(SEEDED_KEY, "1");
     return demo;
   } catch (err) {
-    console.warn("[DayDial] Failed to read local events:", err);
+    console.warn("[Arcelira] Failed to read local events:", err);
     return [];
   }
 }
@@ -159,7 +161,7 @@ function readLocalExceptions(): EventException[] {
     const raw = window.localStorage.getItem(EXCEPTIONS_KEY);
     return raw ? (JSON.parse(raw) as EventException[]) : [];
   } catch (err) {
-    console.warn("[DayDial] Failed to read local exceptions:", err);
+    console.warn("[Arcelira] Failed to read local exceptions:", err);
     return [];
   }
 }
@@ -191,7 +193,7 @@ export function readLocalSettings(): AppSettings {
       language: isLanguage(stored.language) ? stored.language : fallback.language,
     };
   } catch (err) {
-    console.warn("[DayDial] Failed to read local settings:", err);
+    console.warn("[Arcelira] Failed to read local settings:", err);
     return {
       ...DEFAULT_SETTINGS,
       language: resolvePreferredLanguage([
@@ -219,7 +221,13 @@ interface EventRow {
   is_completed: boolean;
   lane_mode?: string | null;
   manual_lane?: number | null;
-  event_reminders?: { minutes_before: number; is_enabled: boolean }[] | null;
+  event_reminders?:
+    | {
+        minutes_before: number;
+        is_enabled: boolean;
+        reminder_type?: string | null;
+      }[]
+    | null;
 }
 
 interface ExceptionRow {
@@ -239,7 +247,7 @@ interface PlannerSession {
 }
 
 const EVENT_SELECT =
-  "id,title,description,start_at,end_at,color,category_name,location,notes,recurrence_rule,recurrence_end_at,is_completed,lane_mode,manual_lane,event_reminders(minutes_before,is_enabled)";
+  "id,title,description,start_at,end_at,color,category_name,location,notes,recurrence_rule,recurrence_end_at,is_completed,lane_mode,manual_lane,event_reminders(minutes_before,is_enabled,reminder_type)";
 
 /**
  * Decode the `recurrence_end_at` column into either a date (repeatUntil) or
@@ -285,6 +293,7 @@ function rowToEvent(row: EventRow): PlannerEvent {
     location: row.location ?? "",
     notes: row.notes ?? "",
     reminderMinutes: reminder ? reminder.minutes_before : -1,
+    reminderDelivery: reminder?.reminder_type === "alarm" ? "alarm" : "notification",
     repeat: (row.recurrence_rule as RepeatRule) ?? "none",
     ...decodeRecurrenceEnd(row.recurrence_end_at),
     isCompleted: row.is_completed,
@@ -420,7 +429,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       .catch((error: unknown) => {
         if (!active) return;
         const normalized = error instanceof Error ? error : new Error(String(error));
-        console.error("[DayDial] Unable to initialize account:", normalized);
+        console.error("[Arcelira] Unable to initialize account:", normalized);
         setAccountInitializationError(normalized);
       });
 
@@ -530,9 +539,24 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     if (isCapacitorNative()) {
-      void rescheduleLocalReminders(events, exceptions, settings.notificationSound);
+      // Preserve previously scheduled alarms while authenticated data loads or
+      // the network is unavailable. Empty data is not an authoritative deletion.
+      if (userId && !remote.data) return;
+      let active = true;
+      void rescheduleLocalReminders(events, exceptions, settings.notificationSound).then((ok) => {
+        if (active && !ok) {
+          toast.error(
+            settings.language === "tr"
+              ? "Hatırlatıcılar planlanamadı. Bildirim ve alarm izinlerini kontrol edip uygulamayı yeniden açın."
+              : "Reminders could not be scheduled. Check notification and alarm access, then reopen the app.",
+            { id: "reminder-scheduling-failed" },
+          );
+        }
+      });
+      // OS alarms outlive the WebView. A dependency update/unmount must not
+      // cancel them; reconciliation replaces changed alarms, sign-out clears them.
       return () => {
-        void teardownLocalReminders();
+        active = false;
       };
     }
     if (userId) {
@@ -541,7 +565,16 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     }
     rescheduleGuestReminders(localEvents, settings.notificationSound);
     return () => teardownGuestReminders();
-  }, [userId, hydrated, events, exceptions, localEvents, settings.notificationSound]);
+  }, [
+    userId,
+    hydrated,
+    events,
+    exceptions,
+    localEvents,
+    remote.data,
+    settings.notificationSound,
+    settings.language,
+  ]);
 
   // Push today's event snapshot to the native home-screen widget (Android).
   // No-op on web. Debounced with a 500ms timer to avoid excessive calls.
@@ -582,14 +615,25 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     writeLocalExceptions(next);
   }, []);
 
-  const upsertReminder = useCallback(async (eventId: string, minutes: number, uid: string) => {
-    await neon.from("event_reminders").delete().eq("event_id", eventId);
-    if (minutes >= 0) {
-      await neon
-        .from("event_reminders")
-        .insert({ event_id: eventId, user_id: uid, minutes_before: minutes });
-    }
-  }, []);
+  const upsertReminder = useCallback(
+    async (
+      eventId: string,
+      minutes: number,
+      reminderDelivery: "notification" | "alarm",
+      uid: string,
+    ) => {
+      await neon.from("event_reminders").delete().eq("event_id", eventId);
+      if (minutes >= 0) {
+        await neon.from("event_reminders").insert({
+          event_id: eventId,
+          user_id: uid,
+          minutes_before: minutes,
+          reminder_type: reminderDelivery,
+        });
+      }
+    },
+    [],
+  );
 
   /** Writes (or replaces) one per-occurrence override or cancellation. */
   const writeException = useCallback(
@@ -661,7 +705,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         .select("id")
         .single();
       if (error) throw error;
-      await upsertReminder(data.id, draft.reminderMinutes, userId);
+      await upsertReminder(data.id, draft.reminderMinutes, draft.reminderDelivery, userId);
       await queryClient.invalidateQueries({ queryKey: ["events", userId] });
       return { ...draft, id: data.id };
     },
@@ -679,8 +723,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       const { id: _ignored, seriesId: _s, occurrenceStartAt: _o, ...draft } = next;
       const { error } = await neon.from("events").update(eventToRow(draft, userId)).eq("id", id);
       if (error) throw error;
-      if (patch.reminderMinutes !== undefined) {
-        await upsertReminder(id, patch.reminderMinutes, userId);
+      if (patch.reminderMinutes !== undefined || patch.reminderDelivery !== undefined) {
+        await upsertReminder(id, next.reminderMinutes, next.reminderDelivery, userId);
       }
       await queryClient.invalidateQueries({ queryKey: ["events", userId] });
     },

@@ -15,10 +15,12 @@ export default tseslint.config(
       ".wrangler",
       "node_modules",
       "android",
+      "ios",
       "test-results",
       "playwright-report",
       "server/send-reminders",
       "e2e",
+      "e2e-capacitor",
     ],
   },
   {

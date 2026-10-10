@@ -12,6 +12,7 @@ interface EventArcProps {
   completed?: boolean;
   thickness?: number;
   interactive?: boolean;
+  minutesPerTurn?: number;
   label?: string | undefined;
   onPointerDown?: ((e: React.PointerEvent<SVGPathElement>) => void) | undefined;
 }
@@ -30,11 +31,12 @@ export function EventArc({
   completed = false,
   thickness = LANE_STROKE,
   interactive = false,
+  minutesPerTurn = 720,
   label,
   onPointerDown,
 }: EventArcProps) {
-  const startAngle = minutesToAngle(startMin);
-  const endAngle = minutesToAngle(endMin);
+  const startAngle = minutesToAngle(startMin, minutesPerTurn);
+  const endAngle = minutesToAngle(endMin, minutesPerTurn);
   const d = arcPath(CX, CY, radius, startAngle, endAngle);
 
   return (
@@ -69,7 +71,10 @@ export function EventArc({
         strokeDasharray={completed ? "2 6" : undefined}
         data-arc="true"
         onPointerDown={onPointerDown}
-        style={{ cursor: interactive ? "grab" : "default", touchAction: "none" }}
+        style={{
+          cursor: interactive ? "grab" : "default",
+          touchAction: interactive ? "none" : "pan-y",
+        }}
       >
         {label ? <title>{label}</title> : null}
       </path>

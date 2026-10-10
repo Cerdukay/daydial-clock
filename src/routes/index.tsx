@@ -22,6 +22,7 @@ import { OverlapEventSheet } from "@/components/daydial/OverlapEventSheet";
 import { EventPreviewPopover } from "@/components/daydial/EventPreviewPopover";
 import { SyncPromptCard } from "@/components/daydial/SyncPromptCard";
 import { LabelStyleOnboarding } from "@/components/daydial/LabelStyleOnboarding";
+import { TimeFormatOnboarding } from "@/components/daydial/TimeFormatOnboarding";
 import { GestureHint } from "@/components/daydial/GestureHint";
 import { RecurrenceScopeSheet } from "@/components/daydial/RecurrenceScopeSheet";
 
@@ -40,13 +41,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DayDial — Today's dial" },
+      { title: "Arcelira — Today's dial" },
       {
         name: "description",
         content:
           "See your whole day as colorful arcs around an analog clock. Drag to move, pinch the handles to resize, and plan in seconds.",
       },
-      { property: "og:title", content: "DayDial — Today's dial" },
+      { property: "og:title", content: "Arcelira — Today's dial" },
       {
         property: "og:description",
         content: "A calm radial daily planner. Plan your day around the clock.",
@@ -59,6 +60,7 @@ export const Route = createFileRoute("/")({
 const SYNC_CARD_KEY = "daydial.syncCardDismissed";
 const ONBOARDING_KEY = "daydial.labelStyleOnboarded";
 const HINT_KEY = "daydial.gestureHintDismissed";
+const TIME_FORMAT_ONBOARDING_KEY = "daydial.timeFormatOnboarded.v1";
 
 function TodayScreen() {
   const navigate = useNavigate();
@@ -85,7 +87,9 @@ function TodayScreen() {
   const [showSyncCard, setShowSyncCard] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showTimeFormatOnboarding, setShowTimeFormatOnboarding] = useState(false);
   const [clockUsed, setClockUsed] = useState(false);
+  const [dayPeriod, setDayPeriod] = useState<0 | 1>(() => (new Date().getHours() < 12 ? 0 : 1));
 
   const [focusId, setFocusId] = useState<string | null>(null);
   const [arrangeOpen, setArrangeOpen] = useState(false);
@@ -127,6 +131,13 @@ function TodayScreen() {
     if (typeof window === "undefined") return;
     if (window.localStorage.getItem(HINT_KEY) !== "1") setShowHint(true);
   }, []);
+
+  useEffect(() => {
+    if (isLoading || typeof window === "undefined") return;
+    if (window.localStorage.getItem(TIME_FORMAT_ONBOARDING_KEY) !== "1") {
+      setShowTimeFormatOnboarding(true);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (!clockUsed) return;
@@ -358,11 +369,48 @@ function TodayScreen() {
           </div>
         ) : view === "clock" ? (
           <div className={cn("transition-transform duration-300", calendarOpen && "scale-[0.94]")}>
+            {settings.timeFormat === "12h" ? (
+              <div
+                className="mx-auto mb-1.5 flex w-full max-w-[360px] rounded-full bg-secondary p-1"
+                role="tablist"
+                aria-label={settings.language === "tr" ? "Günün yarısı" : "Part of day"}
+              >
+                {(
+                  [
+                    {
+                      value: 0 as const,
+                      label: settings.language === "tr" ? "Sabah (Öğleden Önce)" : "Morning (AM)",
+                    },
+                    {
+                      value: 1 as const,
+                      label: settings.language === "tr" ? "Akşam (Öğleden Sonra)" : "Evening (PM)",
+                    },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={dayPeriod === option.value}
+                    onClick={() => setDayPeriod(option.value)}
+                    className={cn(
+                      "min-h-10 flex-1 rounded-full px-2 text-[12px] font-medium leading-tight transition-colors",
+                      dayPeriod === option.value
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <RadialClock
               day={selectedDate}
               events={dayEvents}
               now={isSameDay(selectedDate, now) ? now : undefined}
               timeFormat={settings.timeFormat}
+              visibleHalf={settings.timeFormat === "12h" ? dayPeriod : undefined}
               labelStyle={settings.eventLabelStyle}
               snap={settings.snapMinutes}
               interactive={false}
@@ -584,6 +632,17 @@ function TodayScreen() {
             finishOnboarding();
           }}
           onDismiss={finishOnboarding}
+        />
+      ) : null}
+
+      {showTimeFormatOnboarding ? (
+        <TimeFormatOnboarding
+          initial={settings.timeFormat}
+          onContinue={(timeFormat) => {
+            updateSettings({ timeFormat });
+            window.localStorage.setItem(TIME_FORMAT_ONBOARDING_KEY, "1");
+            setShowTimeFormatOnboarding(false);
+          }}
         />
       ) : null}
     </AppShell>

@@ -8,15 +8,15 @@
 
 import { App } from "@capacitor/app";
 import { Keyboard } from "@capacitor/keyboard";
+import { ClerkProvider } from "@clerk/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { createRoot } from "react-dom/client";
 import { useEffect, useRef } from "react";
 import { PlannerProvider, usePlanner } from "@/lib/daydial/store";
 import { I18nProvider } from "@/lib/i18n";
-import { Toaster } from "@/components/ui/sonner";
 import { getRouter } from "@/router";
-import { registerFirebaseServiceWorker } from "@/lib/notifications/sw-register";
+import { clerkPublishableKey } from "@/lib/clerk";
 import {
   ensureNativeNotificationPermission,
   isCapacitorNative,
@@ -37,8 +37,14 @@ function LocalizedCapacitorContent() {
     events,
     exceptions,
     sound: settings.notificationSound,
+    ready: !isLoading,
   });
-  reminderStateRef.current = { events, exceptions, sound: settings.notificationSound };
+  reminderStateRef.current = {
+    events,
+    exceptions,
+    sound: settings.notificationSound,
+    ready: !isLoading,
+  };
 
   // Android 13+ will not display notifications until POST_NOTIFICATIONS is
   // granted. Ask on the first fully-hydrated native launch so the user is not
@@ -52,6 +58,7 @@ function LocalizedCapacitorContent() {
     void (async () => {
       await ensureNativeNotificationPermission();
       const current = reminderStateRef.current;
+      if (!current.ready) return;
       await rescheduleLocalReminders(current.events, current.exceptions, current.sound);
     })();
   }, [isLoading]);
@@ -66,6 +73,7 @@ function LocalizedCapacitorContent() {
     void App.addListener("appStateChange", ({ isActive }) => {
       if (!isActive) return;
       const current = reminderStateRef.current;
+      if (!current.ready) return;
       void rescheduleLocalReminders(current.events, current.exceptions, current.sound);
     }).then((handle) => {
       if (removed) {
@@ -157,16 +165,13 @@ function LocalizedCapacitorContent() {
   return (
     <I18nProvider language={settings.language}>
       <RouterProvider router={router} />
-      <Toaster position="top-center" />
     </I18nProvider>
   );
 }
 
 function CapacitorApp() {
-  useEffect(() => {
-    void registerFirebaseServiceWorker();
-  }, []);
-  return (
+  const publishableKey = clerkPublishableKey();
+  const content = (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <PlannerProvider>
@@ -174,6 +179,11 @@ function CapacitorApp() {
         </PlannerProvider>
       </ErrorBoundary>
     </QueryClientProvider>
+  );
+  return publishableKey ? (
+    <ClerkProvider publishableKey={publishableKey}>{content}</ClerkProvider>
+  ) : (
+    content
   );
 }
 

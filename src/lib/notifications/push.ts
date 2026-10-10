@@ -62,6 +62,12 @@ export async function unregisterPushToken(userId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function registerCapacitorPush(userId: string): Promise<RegisterTokenResult> {
+  // Capacitor iOS returns an APNs token, not an FCM registration token. Never
+  // label it Android or send it to the FCM-only worker. Local iOS reminders
+  // remain available; remote push requires a separately configured transport.
+  if (Capacitor.getPlatform() === "ios") {
+    return { success: false, error: "iOS remote push transport is not configured" };
+  }
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
     let permStatus = await PushNotifications.checkPermissions();
@@ -138,7 +144,7 @@ async function registerWebPush(userId: string): Promise<RegisterTokenResult> {
         Notification.permission === "granted"
       ) {
         try {
-          new Notification(notification.title ?? "DayDial", {
+          new Notification(notification.title ?? "Arcelira", {
             body: notification.body,
             icon: "/icon-192.png",
             tag: payload.data?.["eventId"] ? `reminder-${payload.data["eventId"]}` : undefined,

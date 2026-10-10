@@ -97,3 +97,15 @@ release/
 
 # bundletool gibi indirilen araclar
 *.jar
+
+# iOS build output and Apple signing material
+*.ipa
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+*.p12
+*.p8
+*.mobileprovision
+*.cer
+*.certSigningRequest
+.apple-signing/

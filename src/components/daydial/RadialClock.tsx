@@ -81,6 +81,8 @@ export interface RadialClockProps {
   events: PlannerEvent[];
   now?: Date | undefined;
   timeFormat?: "12h" | "24h" | undefined;
+  /** Restrict a 12-hour dial to AM (0) or PM (1). */
+  visibleHalf?: 0 | 1 | undefined;
   snap?: number | undefined;
   activeId?: string | null | undefined;
   /** Focus editing mode: only this event responds to gestures. */
@@ -118,6 +120,7 @@ export function RadialClock({
   events,
   now,
   timeFormat = "12h",
+  visibleHalf,
   snap = 15,
   activeId = null,
   focusId = null,
@@ -144,6 +147,7 @@ export function RadialClock({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingTap = useRef<PlannerEvent | null>(null);
+  const pressOrigin = useRef<{ x: number; y: number } | null>(null);
   const lastLane = useRef<number | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   /** Ref to the latest drag state for use in document-level event listeners. */
@@ -157,6 +161,7 @@ export function RadialClock({
 
   const dayStart = startOfDay(day);
   const nowMinutes = now ? minutesFromMidnight(now) : null;
+  const minutesPerTurn = timeFormat === "24h" ? 1440 : 720;
 
   const previewEvents = useMemo(() => {
     if (!drag || drag.kind === "create" || !drag.id) return events;
@@ -179,11 +184,20 @@ export function RadialClock({
 
   const lanes = useMemo(() => assignLanes(previewEvents, day), [previewEvents, day]);
 
+  const displayLanes = useMemo(() => {
+    if (timeFormat !== "12h" || visibleHalf === undefined) return lanes;
+    return {
+      ...lanes,
+      segments: lanes.segments.filter((segment) => segment.half === visibleHalf),
+      overflow: lanes.overflow.filter((group) => group.half === visibleHalf),
+    };
+  }, [lanes, timeFormat, visibleHalf]);
+
   const labelPlan = useMemo(
     () =>
       labelStyle === "inside"
         ? (() => {
-            const plan = planInsideLabels(lanes);
+            const plan = planInsideLabels(displayLanes, minutesPerTurn);
             return {
               labels: [] as LabelPlan[],
               insideLabels: plan.labels,
@@ -191,14 +205,14 @@ export function RadialClock({
             };
           })()
         : (() => {
-            const plan = planLabels(lanes, dayStart, timeFormat);
+            const plan = planLabels(displayLanes, dayStart, timeFormat, minutesPerTurn);
             return {
               labels: plan.labels,
               insideLabels: [] as InsideLabelPlan[],
               labeledIds: plan.labeledIds,
             };
           })(),
-    [labelStyle, lanes, dayStart, timeFormat],
+    [labelStyle, displayLanes, dayStart, timeFormat, minutesPerTurn],
   );
 
   const editableId = focusId ?? activeId;
@@ -210,7 +224,7 @@ export function RadialClock({
 
   const activeBounds = useMemo(() => {
     if (!activeEvent) return null;
-    const pieces = lanes.segments.filter((segment) => segment.event.id === activeEvent.id);
+    const pieces = displayLanes.segments.filter((segment) => segment.event.id === activeEvent.id);
     if (pieces.length === 0) return null;
     const first = pieces[0]!;
     return {
@@ -219,7 +233,7 @@ export function RadialClock({
       lane: first.lane,
       radius: trackRadius(first.lane, first.subTrack, first.split),
     };
-  }, [activeEvent, lanes]);
+  }, [activeEvent, displayLanes]);
 
   const toLocal = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -237,15 +251,15 @@ export function RadialClock({
       const local = toLocal(clientX, clientY);
       if (!local) return reference;
       const angle = pointToAngle(CX, CY, local.x, local.y);
-      const base = angleToMinutes(angle);
-      const candidates = [base, base + 720];
+      const base = angleToMinutes(angle, minutesPerTurn);
+      const candidates = [base, base + minutesPerTurn];
       let best = candidates[0]!;
       for (const candidate of candidates) {
         if (Math.abs(candidate - reference) < Math.abs(best - reference)) best = candidate;
       }
       return Math.min(1440, Math.max(0, best));
     },
-    [toLocal],
+    [minutesPerTurn, toLocal],
   );
 
   /** Nearest lane band for the pointer's distance from the center. */
@@ -288,7 +302,7 @@ export function RadialClock({
   }, []);
 
   const eventBounds = (segment: EventSegment) => {
-    const pieces = lanes.segments.filter((item) => item.event.id === segment.event.id);
+    const pieces = displayLanes.segments.filter((item) => item.event.id === segment.event.id);
     return {
       startMin: Math.min(...pieces.map((p) => p.startMin)),
       endMin: Math.max(...pieces.map((p) => p.endMin)),
@@ -326,6 +340,7 @@ export function RadialClock({
     clearLongPress();
     detachDocListeners();
     pendingTap.current = null;
+    pressOrigin.current = null;
     dragRef.current = null;
     lastLane.current = null;
     setDrag(null);
@@ -337,6 +352,12 @@ export function RadialClock({
     detachDocListeners();
 
     const onMove = (e: PointerEvent) => {
+      const origin = pressOrigin.current;
+      if (origin && Math.hypot(e.clientX - origin.x, e.clientY - origin.y) > 10) {
+        clearLongPress();
+        pendingTap.current = null;
+        pressOrigin.current = null;
+      }
       const current = dragRef.current;
       if (!current) return;
       const reference = current.kind === "end" ? current.endMin : current.startMin;
@@ -368,6 +389,7 @@ export function RadialClock({
 
     const onUp = () => {
       clearLongPress();
+      pressOrigin.current = null;
       // Remove document listeners immediately.
       detachDocListeners();
 
@@ -456,6 +478,7 @@ export function RadialClock({
       clearLongPress();
       detachDocListeners();
       pendingTap.current = null;
+      pressOrigin.current = null;
       dragRef.current = null;
       lastLane.current = null;
       window.removeEventListener("blur", cancelInteraction);
@@ -464,11 +487,12 @@ export function RadialClock({
     };
   }, [cancelInteraction, clearLongPress, detachDocListeners]);
 
-  const handleArcPointerDown = (segment: EventSegment, e: React.PointerEvent<SVGPathElement>) => {
+  const handleArcPointerDown = (segment: EventSegment, e: React.PointerEvent<SVGElement>) => {
     // View-only mode: a tap previews, a long press opens focus editing.
     if (!interactive || (focusId && segment.event.id !== focusId)) {
       e.stopPropagation();
       const event = segment.event;
+      pressOrigin.current = { x: e.clientX, y: e.clientY };
       pendingTap.current = event;
       clearLongPress();
       if (onLongPressEvent) {
@@ -526,7 +550,12 @@ export function RadialClock({
     if (!onCreate) return;
     const target = e.target as Element;
     if (target.closest("[data-arc]")) return;
-    const startRef = nowMinutes ?? 9 * 60;
+    pressOrigin.current = { x: e.clientX, y: e.clientY };
+    const baseReference = nowMinutes ?? 9 * 60;
+    const startRef =
+      timeFormat === "12h" && visibleHalf !== undefined
+        ? (baseReference % 720) + visibleHalf * 720
+        : baseReference;
     const pointer = pointerMinutes(e.clientX, e.clientY, startRef);
     // No setPointerCapture — use document-level listeners instead.
     longPress.current = setTimeout(() => {
@@ -546,6 +575,19 @@ export function RadialClock({
     }, 380);
   };
 
+  const handleSurfacePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const origin = pressOrigin.current;
+    if (!origin || Math.hypot(e.clientX - origin.x, e.clientY - origin.y) <= 10) return;
+    clearLongPress();
+    pendingTap.current = null;
+    pressOrigin.current = null;
+  };
+
+  const finishSurfacePress = () => {
+    clearLongPress();
+    pressOrigin.current = null;
+  };
+
   const describe = (event: PlannerEvent) =>
     `${event.title}, ${formatRange(event.startAt, event.endAt, timeFormat)}${
       event.isCompleted ? ", completed" : ""
@@ -563,12 +605,13 @@ export function RadialClock({
         ref={svgRef}
         viewBox={`0 0 ${VIEW} ${VIEW}`}
         className="w-full select-none"
-        style={{ touchAction: "none" }}
+        style={{ touchAction: interactive || drag ? "none" : "pan-y" }}
         role="group"
         aria-label={t("clock.aria")}
         onPointerDown={handleSurfacePointerDown}
-        onPointerUp={clearLongPress}
-        onPointerLeave={clearLongPress}
+        onPointerMove={handleSurfacePointerMove}
+        onPointerUp={finishSurfacePress}
+        onPointerLeave={finishSurfacePress}
       >
         {/* Fixed lane bands */}
         {LANE_RADII.map((radius, index) => (
@@ -596,12 +639,24 @@ export function RadialClock({
 
         <ClockFace showGuides={showGuides} timeFormat={timeFormat} />
 
-        {showHands && nowMinutes !== null && <ClockHands minutes={nowMinutes} />}
+        {showHands &&
+          nowMinutes !== null &&
+          (timeFormat === "24h" ||
+            visibleHalf === undefined ||
+            Math.floor(nowMinutes / 720) === visibleHalf) && (
+            <ClockHands minutes={nowMinutes} minutesPerTurn={minutesPerTurn} />
+          )}
         {/* Behind the arcs and labels so it can never cover a title. */}
-        {showNow && nowMinutes !== null && <CurrentTimeHand minutes={nowMinutes} />}
+        {showNow &&
+          nowMinutes !== null &&
+          (timeFormat === "24h" ||
+            visibleHalf === undefined ||
+            Math.floor(nowMinutes / 720) === visibleHalf) && (
+            <CurrentTimeHand minutes={nowMinutes} minutesPerTurn={minutesPerTurn} />
+          )}
 
         <RadialEventLanes
-          lanes={lanes}
+          lanes={displayLanes}
           labels={labelPlan.labels}
           insideLabels={labelPlan.insideLabels}
           labelStyle={labelStyle}
@@ -609,12 +664,12 @@ export function RadialClock({
           focusId={focusId}
           showLabels={showLabels}
           interactive={interactive}
+          minutesPerTurn={minutesPerTurn}
+          allowPageScroll={!interactive}
           onArcPointerDown={handleArcPointerDown}
-          onLabelPointerDown={(eventId) => {
-            const event = events.find((item) => item.id === eventId);
-            if (!event) return;
-            if (onPreview) onPreview(event);
-            else onSelect?.(event);
+          onLabelPointerDown={(eventId, event) => {
+            const segment = displayLanes.segments.find((item) => item.event.id === eventId);
+            if (segment) handleArcPointerDown(segment, event);
           }}
 
           onOverflow={onOverflow}
@@ -629,6 +684,7 @@ export function RadialClock({
             color="cyan"
             active
             thickness={LANE_STROKE}
+            minutesPerTurn={minutesPerTurn}
           />
         )}
 
@@ -641,6 +697,7 @@ export function RadialClock({
               hitRadius={handleGripRadius}
               label={t("clock.dragStart")}
               active={drag?.kind === "start"}
+              minutesPerTurn={minutesPerTurn}
               onPointerDown={handleHandlePointerDown("start")}
             />
             <EventArcHandle
@@ -650,6 +707,7 @@ export function RadialClock({
               hitRadius={handleGripRadius}
               label={t("clock.dragEnd")}
               active={drag?.kind === "end"}
+              minutesPerTurn={minutesPerTurn}
               onPointerDown={handleHandlePointerDown("end")}
             />
           </>
@@ -664,7 +722,7 @@ export function RadialClock({
               CX,
               CY,
               (activeBounds?.radius ?? laneRadius(0)) + 22,
-              minutesToAngle(minutes),
+              minutesToAngle(minutes, minutesPerTurn),
             );
             const text = formatTime(addMinutes(dayStart, minutes), timeFormat);
             const width = text.length * 7 + 16;

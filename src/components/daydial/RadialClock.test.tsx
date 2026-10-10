@@ -25,6 +25,7 @@ const event: PlannerEvent = {
   location: "",
   notes: "",
   reminderMinutes: -1,
+  reminderDelivery: "notification",
   repeat: "none",
   repeatUntil: null,
   repeatCount: 0,
@@ -33,8 +34,19 @@ const event: PlannerEvent = {
   manualLane: null,
 };
 
+const eveningEvent: PlannerEvent = {
+  ...event,
+  id: "event-2",
+  title: "Evening QA",
+  startAt: new Date(2026, 7, 24, 19, 0).toISOString(),
+  endAt: new Date(2026, 7, 24, 20, 0).toISOString(),
+};
+
 describe("RadialClock interrupted gestures", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it("cancels a partial Android gesture without committing it", () => {
     Object.defineProperty(SVGSVGElement.prototype, "getScreenCTM", {
@@ -79,5 +91,47 @@ describe("RadialClock interrupted gestures", () => {
     fireEvent.blur(window);
 
     expect(onDraggingChange.mock.calls.map(([value]) => value)).toEqual([true, false]);
+  });
+
+  it("allows vertical page scrolling in view mode and cancels long-press after movement", () => {
+    vi.useFakeTimers();
+    const onLongPressEvent = vi.fn();
+    const { container } = render(
+      <RadialClock
+        day={day}
+        events={[event]}
+        interactive={false}
+        onLongPressEvent={onLongPressEvent}
+      />,
+    );
+    const svg = container.querySelector("svg");
+    const arc = container.querySelector('path[data-arc="true"]');
+
+    expect((svg as SVGSVGElement).style.touchAction).toBe("pan-y");
+    expect((arc as SVGPathElement).style.touchAction).toBe("pan-y");
+
+    fireEvent.pointerDown(arc!, { clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(document, { clientX: 100, clientY: 125 });
+    vi.advanceTimersByTime(500);
+
+    expect(onLongPressEvent).not.toHaveBeenCalled();
+  });
+
+  it("shows only the selected half of a 12-hour day", () => {
+    const { container, rerender } = render(
+      <RadialClock day={day} events={[event, eveningEvent]} timeFormat="12h" visibleHalf={0} />,
+    );
+
+    expect(container.querySelectorAll('path[data-arc="true"]')).toHaveLength(1);
+    expect(container.textContent).toContain("Android QA");
+    expect(container.textContent).not.toContain("Evening QA");
+
+    rerender(
+      <RadialClock day={day} events={[event, eveningEvent]} timeFormat="12h" visibleHalf={1} />,
+    );
+
+    expect(container.querySelectorAll('path[data-arc="true"]')).toHaveLength(1);
+    expect(container.textContent).toContain("Evening QA");
+    expect(container.textContent).not.toContain("Android QA");
   });
 });

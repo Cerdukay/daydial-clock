@@ -239,6 +239,13 @@ describe("angle maths", () => {
     }
   });
 
+  it("maps a full day around one 24-hour dial", () => {
+    expect(minutesToAngle(0, 1440)).toBe(0);
+    expect(minutesToAngle(720, 1440)).toBe(180);
+    expect(minutesToAngle(1080, 1440)).toBe(270);
+    expect(angleToMinutes(180, 1440)).toBe(720);
+  });
+
   it("snaps to the nearest increment", () => {
     expect(snapMinutes(7, 15)).toBe(0);
     expect(snapMinutes(8, 15)).toBe(15);

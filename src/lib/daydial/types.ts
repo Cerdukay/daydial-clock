@@ -42,6 +42,9 @@ export const REMINDER_OPTIONS = [
   { value: 60, label: "1 hour before" },
 ] as const;
 
+/** The delivery experience selected for a scheduled event reminder. */
+export type ReminderDelivery = "notification" | "alarm";
+
 /** How an event is placed on the concentric radial lanes. */
 export type LaneMode = "auto" | "manual";
 
@@ -68,6 +71,8 @@ export interface PlannerEvent {
   location: string;
   notes: string;
   reminderMinutes: number;
+  /** Standard notification, or a high-priority alarm on supported native devices. */
+  reminderDelivery: ReminderDelivery;
   repeat: RepeatRule;
   /** Last day the series repeats (inclusive), or null for "forever". */
   repeatUntil: string | null;

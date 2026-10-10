@@ -20,9 +20,12 @@ interface RadialEventLanesProps {
   focusId?: string | null | undefined;
   showLabels?: boolean;
   interactive?: boolean;
+  minutesPerTurn?: number;
+  allowPageScroll?: boolean;
   onArcPointerDown?:
     ((segment: EventSegment, e: React.PointerEvent<SVGPathElement>) => void) | undefined;
-  onLabelPointerDown?: ((eventId: string) => void) | undefined;
+  onLabelPointerDown?:
+    ((eventId: string, event: React.PointerEvent<SVGGElement>) => void) | undefined;
   onOverflow?: ((events: PlannerEvent[]) => void) | undefined;
 
   describe: (event: PlannerEvent) => string;
@@ -38,6 +41,8 @@ export function RadialEventLanes({
   focusId = null,
   showLabels = true,
   interactive = false,
+  minutesPerTurn = 720,
+  allowPageScroll = false,
   onArcPointerDown,
   onLabelPointerDown,
   onOverflow,
@@ -61,6 +66,7 @@ export function RadialEventLanes({
           active={highlightId === segment.event.id}
           dimmed={Boolean(highlightId) && highlightId !== segment.event.id}
           interactive={interactive && (!focusId || focusId === segment.event.id)}
+          minutesPerTurn={minutesPerTurn}
           label={describe(segment.event)}
           onPointerDown={onArcPointerDown ? (e) => onArcPointerDown(segment, e) : undefined}
         />
@@ -78,6 +84,7 @@ export function RadialEventLanes({
             text={label.text}
             color={label.color}
             muted={label.muted}
+            minutesPerTurn={minutesPerTurn}
           />
         ))}
 
@@ -95,11 +102,12 @@ export function RadialEventLanes({
             color={label.color}
             muted={label.muted}
             rotated={label.rotated}
+            allowPageScroll={allowPageScroll}
             onPointerDown={
               onLabelPointerDown
                 ? (e) => {
                     e.stopPropagation();
-                    onLabelPointerDown(label.eventId);
+                    onLabelPointerDown(label.eventId, e);
                   }
                 : undefined
             }
@@ -111,15 +119,13 @@ export function RadialEventLanes({
           CX,
           CY,
           laneRadius(3),
-          minutesToAngle((group.startMin + group.endMin) / 2),
+          minutesToAngle((group.startMin + group.endMin) / 2, minutesPerTurn),
         );
         return (
           <g
             key={`overflow-${group.half}-${group.startMin}`}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onOverflow?.(group.events);
-            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onOverflow?.(group.events)}
             style={{ cursor: "pointer" }}
             role="button"
             aria-label={`${group.events.length} more overlapping events`}

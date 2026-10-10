@@ -46,7 +46,11 @@ describe("shortenTitle", () => {
   });
 
   it("prefers word boundaries over mid-word cuts", () => {
-    expect(shortenTitle("Design review with team", 14)).toBe("Design review");
+    expect(shortenTitle("Design review with team", 14)).toBe("Design review…");
+  });
+
+  it("marks every shortened title with an ellipsis", () => {
+    expect(shortenTitle("Project planning meeting", 10)).toBe("Project…");
   });
 
   it("ellipsises a single long word", () => {
@@ -55,8 +59,9 @@ describe("shortenTitle", () => {
     expect(out.endsWith("…")).toBe(true);
   });
 
-  it("returns null when nothing readable fits", () => {
-    expect(shortenTitle("Workshop", 3)).toBeNull();
+  it("keeps a leading character and ellipsis in very tight spaces", () => {
+    expect(shortenTitle("Workshop", 2)).toBe("W…");
+    expect(shortenTitle("Workshop", 1)).toBeNull();
   });
 });
 
@@ -155,12 +160,16 @@ describe("planInsideLabels", () => {
     ]);
     if (labels.length) {
       expect(labels[0]!.text.length).toBeLessThanOrEqual(10);
+      expect(labels[0]!.text.endsWith("…")).toBe(true);
       expect(labels[0]! as unknown as { time?: string }).not.toHaveProperty("time");
     }
   });
 
-  it("stays arc-only under the minimum duration", () => {
-    expect(inside([makeEvent("a", at("09:00"), at("09:25"))]).labels).toHaveLength(0);
+  it("shows an ellipsised title for a short event when the arc can fit it", () => {
+    const { labels } = inside([
+      makeEvent("a", at("11:00"), at("11:15"), { title: "Spor salonunda antrenman" }),
+    ]);
+    expect(labels[0]!.text).toBe("S…");
   });
 
   it("skips split lane bands that are too thin for text", () => {

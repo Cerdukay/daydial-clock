@@ -1,6 +1,6 @@
 {
-  "name": "DayDial — Radial Daily Planner",
-  "short_name": "DayDial",
+  "name": "Arcelira — Radial Daily Planner",
+  "short_name": "Arcelira",
   "description": "See your whole day as colorful arcs around an analog clock. Drag to move, pinch to resize, and plan in seconds.",
   "start_url": "/",
   "display": "standalone",

@@ -32,14 +32,14 @@ const NOTIFICATION_SOUND_KEYS: Record<NotificationSound, DictKey> = {
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — DayDial" },
+      { title: "Settings — Arcelira" },
       {
         name: "description",
         content:
-          "Choose your theme, snap interval, default view and reduced-motion preference for DayDial.",
+          "Choose your theme, snap interval, default view and reduced-motion preference for Arcelira.",
       },
-      { property: "og:title", content: "Settings — DayDial" },
-      { property: "og:description", content: "Tune DayDial to the way you plan." },
+      { property: "og:title", content: "Settings — Arcelira" },
+      { property: "og:description", content: "Tune Arcelira to the way you plan." },
     ],
   }),
   component: SettingsScreen,

@@ -12,7 +12,7 @@ async function waitForSettingsHydration(page: import("@playwright/test").Page) {
  * settings persistence. These run against the dev server in guest mode
  * (no Clerk auth required).
  */
-test.describe("DayDial CRUD flows", () => {
+test.describe("Arcelira CRUD flows", () => {
   test("create an event and verify it appears on the clock", async ({ page }) => {
     await page.goto("/");
 

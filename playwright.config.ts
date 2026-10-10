@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright E2E configuration for DayDial.
+ * Playwright E2E configuration for Arcelira.
  *
  * Tests run against the production Vite preview server on port 4173.
  * Start the preview server manually or let the webServer config handle it.

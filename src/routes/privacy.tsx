@@ -4,10 +4,10 @@ import { AppShell } from "@/components/daydial/AppShell";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — DayDial" },
+      { title: "Privacy Policy — Arcelira" },
       {
         name: "description",
-        content: "Privacy policy for DayDial — what data we collect and how we use it.",
+        content: "Privacy policy for Arcelira — what data we collect and how we use it.",
       },
     ],
   }),
@@ -23,7 +23,7 @@ function PrivacyPolicy() {
 
         <h2 className="mt-6 text-lg font-semibold">1. Overview</h2>
         <p>
-          DayDial (&ldquo;the app&rdquo;) is a radial daily planner. We respect your privacy and
+          Arcelira (&ldquo;the app&rdquo;) is a radial daily planner. We respect your privacy and
           collect only the minimum data needed to provide calendar, reminder, and cross-device sync
           features. We do not sell or rent your data to third parties.
         </p>
@@ -33,7 +33,7 @@ function PrivacyPolicy() {
           <li>
             <strong>Account data (Clerk):</strong> Your email address and a Clerk user ID when you
             create an account. Passwords are managed by Clerk and never stored or accessible to
-            DayDial.
+            Arcelira.
           </li>
           <li>
             <strong>Calendar &amp; event data (Neon Postgres):</strong> Events, reminders,
@@ -110,7 +110,7 @@ function PrivacyPolicy() {
 
         <h2 className="mt-6 text-lg font-semibold">6. Children&apos;s Privacy</h2>
         <p>
-          DayDial is not directed at children under 13 and we do not knowingly collect data from
+          Arcelira is not directed at children under 13 and we do not knowingly collect data from
           children. If you believe a child has provided us with personal data, please contact us so
           we can delete it.
         </p>

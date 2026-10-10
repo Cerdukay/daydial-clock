@@ -5,14 +5,14 @@ import type { PlannerEvent } from "./types";
 export const MINUTES_PER_TURN = 720; // 12 hours = one full revolution
 
 /** Convert minutes-from-12-o'clock into an SVG angle (0deg = 12 o'clock, clockwise). */
-export function minutesToAngle(minutes: number): number {
-  return ((minutes % MINUTES_PER_TURN) / MINUTES_PER_TURN) * 360;
+export function minutesToAngle(minutes: number, minutesPerTurn = MINUTES_PER_TURN): number {
+  return ((minutes % minutesPerTurn) / minutesPerTurn) * 360;
 }
 
-/** Convert an SVG angle back to minutes within a single 12h turn. */
-export function angleToMinutes(angle: number): number {
+/** Convert an SVG angle back to minutes within one configured dial turn. */
+export function angleToMinutes(angle: number, minutesPerTurn = MINUTES_PER_TURN): number {
   const normalized = ((angle % 360) + 360) % 360;
-  return (normalized / 360) * MINUTES_PER_TURN;
+  return (normalized / 360) * minutesPerTurn;
 }
 
 export function polarToPoint(cx: number, cy: number, radius: number, angleDeg: number) {

@@ -12,12 +12,12 @@ import type { EventDraft, RecurrenceScope } from "@/lib/daydial/types";
 export const Route = createFileRoute("/event/$eventId")({
   head: () => ({
     meta: [
-      { title: "Edit event — DayDial" },
+      { title: "Edit event — Arcelira" },
       {
         name: "description",
         content: "Adjust the time, color, category and reminders of a block on your day dial.",
       },
-      { property: "og:title", content: "Edit event — DayDial" },
+      { property: "og:title", content: "Edit event — Arcelira" },
       { property: "og:description", content: "Fine-tune an event on your radial day planner." },
     ],
   }),

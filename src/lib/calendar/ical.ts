@@ -1,5 +1,5 @@
 /**
- * RFC 5545 iCalendar (.ics) export for DayDial events.
+ * RFC 5545 iCalendar (.ics) export for Arcelira events.
  *
  * Converts PlannerEvent[] + EventException[] into a VCALENDAR with VEVENT
  * entries, including RRULE for repeating events and EXDATE for cancelled
@@ -32,7 +32,7 @@ function escapeICalText(text: string): string {
     .replace(/\n/g, "\\n");
 }
 
-/** Map DayDial repeat rule to iCal RRULE. */
+/** Map Arcelira repeat rule to iCal RRULE. */
 function repeatToRRule(
   repeat: RepeatRule,
   repeatUntil: string | null,
@@ -140,7 +140,7 @@ function buildVEvent(event: PlannerEvent, exceptions: EventException[]): string[
 }
 
 /**
- * Generate a complete .ics file string from DayDial events.
+ * Generate a complete .ics file string from Arcelira events.
  *
  * @param events    The planner events to export.
  * @param exceptions Per-occurrence overrides/cancellations for repeating events.
@@ -150,7 +150,7 @@ export function exportToICal(events: PlannerEvent[], exceptions: EventException[
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//DayDial//Radial Daily Planner//EN",
+    "PRODID:-//Arcelira//Radial Daily Planner//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];

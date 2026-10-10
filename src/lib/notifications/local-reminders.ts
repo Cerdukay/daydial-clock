@@ -3,29 +3,42 @@
  *
  * The Web Notification API only works while a page is alive. Android users
  * need AlarmManager-backed notifications so reminders continue to fire when
- * DayDial is in the background or the process has been stopped. This module
+ * Arcelira is in the background or the process has been stopped. This module
  * deliberately keeps the web path out of the native plugin import so the SSR
  * and PWA builds remain safe.
  */
 
-import type { EventException, NotificationSound, PlannerEvent } from "@/lib/daydial/types";
+import type {
+  EventException,
+  NotificationSound,
+  PlannerEvent,
+  ReminderDelivery,
+} from "@/lib/daydial/types";
 import { expandRange } from "@/lib/daydial/recurrence";
 import { Capacitor } from "@capacitor/core";
 import type { LocalNotificationsPlugin } from "@capacitor/local-notifications";
+import { isIosNative, requestIosAlarmPermission, syncIosAlarms } from "./ios-alarms";
 
 const MAX_LOOKAHEAD_MS = 90 * 24 * 60 * 60 * 1000;
 const MIN_FIRE_OFFSET_MS = 1000;
+const RECENT_REMINDER_GRACE_MS = 60 * 1000;
 const MAX_NOTIFICATION_ID = 2_147_483_647;
 const REMINDER_CHANNEL_ID = "daydial-reminders";
 const SILENT_CHANNEL_ID = "daydial-reminders-silent";
+// Android notification-channel sound settings are immutable after the first
+// creation. v2 is backed by a native channel that uses the system alarm sound;
+// keeping a new id upgrades devices whose old alarm channel was silent.
+const ALARM_CHANNEL_ID = "daydial-alarms-v2";
 const REMINDER_SOURCE = "daydial-reminder";
 
 export interface LocalScheduledReminder {
   eventId: string;
   fireAt: number;
+  requestedFireAt: number;
   title: string;
   body: string;
   notificationId: number;
+  reminderDelivery: ReminderDelivery;
 }
 
 // Capacitor's plugin proxy exposes a `then` member for unsupported methods.
@@ -137,6 +150,7 @@ export async function ensureNativeNotificationPermission(): Promise<Notification
  * with Android's safe inexact fallback.
  */
 export async function requestExactNotificationPermission(): Promise<boolean> {
+  if (isIosNative()) return requestIosAlarmPermission();
   const handle = await getLocalNotifications();
   if (!handle) return false;
   const plugin = handle.plugin;
@@ -195,8 +209,11 @@ export function computeLocalReminders(
     }
     const startMs = new Date(event.startAt).getTime();
     if (!Number.isFinite(startMs)) continue;
-    const fireAt = startMs - event.reminderMinutes * 60 * 1000;
-    if (fireAt < now + MIN_FIRE_OFFSET_MS || fireAt > horizon) continue;
+    const requestedFireAt = startMs - event.reminderMinutes * 60 * 1000;
+    if (requestedFireAt < now - RECENT_REMINDER_GRACE_MS || requestedFireAt > horizon) continue;
+    // Saving an event at the exact reminder minute often takes a few seconds.
+    // Deliver that fresh reminder immediately instead of silently dropping it.
+    const fireAt = Math.max(requestedFireAt, now + MIN_FIRE_OFFSET_MS);
 
     const timeLabel = new Date(event.startAt).toLocaleTimeString(undefined, {
       hour: "numeric",
@@ -206,9 +223,11 @@ export function computeLocalReminders(
     reminders.push({
       eventId: event.id,
       fireAt,
-      title: typeof event.title === "string" ? event.title.trim() || "DayDial" : "DayDial",
+      requestedFireAt,
+      title: typeof event.title === "string" ? event.title.trim() || "Arcelira" : "Arcelira",
       body: `Starts at ${timeLabel}`,
       notificationId: uniqueNotificationId(occurrenceKey, usedIds),
+      reminderDelivery: event.reminderDelivery === "alarm" ? "alarm" : "notification",
     });
   }
 
@@ -220,8 +239,8 @@ async function ensureChannels(plugin: LocalNotificationsPlugin): Promise<void> {
     await Promise.all([
       plugin.createChannel({
         id: REMINDER_CHANNEL_ID,
-        name: "DayDial reminders",
-        description: "Scheduled reminders for DayDial events",
+        name: "Arcelira reminders",
+        description: "Scheduled reminders for Arcelira events",
         importance: 4,
         visibility: 1,
         vibration: true,
@@ -230,12 +249,22 @@ async function ensureChannels(plugin: LocalNotificationsPlugin): Promise<void> {
       }),
       plugin.createChannel({
         id: SILENT_CHANNEL_ID,
-        name: "DayDial silent reminders",
+        name: "Arcelira silent reminders",
         description: "Scheduled reminders without sound or vibration",
         importance: 2,
         visibility: 1,
         vibration: false,
         lights: false,
+      }),
+      plugin.createChannel({
+        id: ALARM_CHANNEL_ID,
+        name: "Arcelira alarms",
+        description: "High-priority alarms for Arcelira events",
+        importance: 5,
+        visibility: 1,
+        vibration: true,
+        lights: true,
+        lightColor: "#ef4444",
       }),
     ]);
   } catch {
@@ -283,19 +312,37 @@ async function scheduleNativeReminders(
   const handle = await getLocalNotifications();
   if (!handle) return;
   const plugin = handle.plugin;
+  const ios = isIosNative();
+  const reminders = computeLocalReminders(events, exceptions);
+  // AlarmKit has separate authorization. Denying notification access must not
+  // block an authorized alarm, and alarm failures must not block notifications.
+  let alarmFailure: unknown;
+  if (ios) {
+    try {
+      await syncIosAlarms(reminders);
+    } catch (error) {
+      alarmFailure = error;
+    }
+  }
   const permission = await getLocalNotificationPermission();
   if (permission !== "granted") {
     await cancelExisting(plugin);
+    if (alarmFailure) throw alarmFailure;
     return;
   }
 
-  await ensureChannels(plugin);
+  if (!ios) await ensureChannels(plugin);
   await cancelExisting(plugin);
-  const reminders = computeLocalReminders(events, exceptions);
-  if (reminders.length === 0) return;
+  const notifications = ios
+    ? reminders.filter((reminder) => reminder.reminderDelivery === "notification").slice(0, 64)
+    : reminders;
+  if (notifications.length === 0) {
+    if (alarmFailure) throw alarmFailure;
+    return;
+  }
 
   await plugin.schedule({
-    notifications: reminders.map((reminder) => ({
+    notifications: notifications.map((reminder) => ({
       id: reminder.notificationId,
       title: reminder.title,
       body: reminder.body,
@@ -303,43 +350,64 @@ async function scheduleNativeReminders(
         at: new Date(reminder.fireAt),
         allowWhileIdle: true,
       },
-      channelId: sound === "none" ? SILENT_CHANNEL_ID : REMINDER_CHANNEL_ID,
-      smallIcon: "ic_stat_daydial",
-      iconColor: "#06b6d4",
-      autoCancel: true,
+      // iOS plays no sound when omitted. An unknown sound filename uses the
+      // documented system-default fallback; custom Android channels stay intact.
+      ...(ios
+        ? { sound: sound === "none" ? undefined : "default" }
+        : {
+            channelId:
+              reminder.reminderDelivery === "alarm"
+                ? ALARM_CHANNEL_ID
+                : sound === "none"
+                  ? SILENT_CHANNEL_ID
+                  : REMINDER_CHANNEL_ID,
+            smallIcon: "ic_stat_daydial",
+            iconColor: "#06b6d4",
+            autoCancel: true,
+            ongoing: reminder.reminderDelivery === "alarm",
+          }),
       extra: {
         source: REMINDER_SOURCE,
         eventId: reminder.eventId,
+        reminderDelivery: reminder.reminderDelivery,
       },
     })),
   });
   void registerActionListener(plugin);
+  if (alarmFailure) throw alarmFailure;
 }
 
-/** Replace all DayDial alarms after an event/settings change. */
+/** Replace all Arcelira alarms after an event/settings change. */
 export function rescheduleLocalReminders(
   events: PlannerEvent[],
   exceptions: EventException[] = [],
   sound: NotificationSound = "chime",
-): Promise<void> {
-  scheduleQueue = scheduleQueue
+): Promise<boolean> {
+  const result = scheduleQueue
     .catch(() => undefined)
     .then(() => scheduleNativeReminders(events, exceptions, sound))
+    .then(() => true)
     .catch((error: unknown) => {
       // Scheduling must never surface as an unhandled rejection from a React
       // effect. A later event/settings change retries the complete schedule.
       console.warn("[notifications] local reminder scheduling failed:", error);
+      return false;
     });
-  return scheduleQueue;
+  scheduleQueue = result.then(() => undefined);
+  return result;
 }
 
-/** Cancel alarms owned by DayDial, e.g. during sign-out or native teardown. */
+/** Cancel alarms owned by Arcelira, e.g. during sign-out or native teardown. */
 export function teardownLocalReminders(): Promise<void> {
   scheduleQueue = scheduleQueue
     .catch(() => undefined)
     .then(async () => {
       const handle = await getLocalNotifications();
       if (handle) await cancelExisting(handle.plugin);
-    });
+      if (isIosNative()) await syncIosAlarms([]);
+    })
+    .catch((error: unknown) =>
+      console.warn("[notifications] reminder cancellation failed:", error),
+    );
   return scheduleQueue;
 }

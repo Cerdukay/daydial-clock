@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.daydial.app",
-  appName: "DayDial",
+  appName: "Arcelira",
   webDir: "dist",
   backgroundColor: "#0a0a0a",
   android: {
@@ -22,6 +22,7 @@ const config: CapacitorConfig = {
     LocalNotifications: {
       smallIcon: "ic_stat_daydial",
       iconColor: "#06b6d4",
+      presentationOptions: ["badge", "sound", "banner", "list"],
     },
     Keyboard: {
       // The activity uses Android's native adjustResize mode. Enabling Capacitor's

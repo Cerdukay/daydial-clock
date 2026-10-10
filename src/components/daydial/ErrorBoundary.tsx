@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[DayDial] ErrorBoundary caught:", error, errorInfo);
+    console.error("[Arcelira] ErrorBoundary caught:", error, errorInfo);
   }
 
   override componentDidUpdate(prevProps: Props): void {

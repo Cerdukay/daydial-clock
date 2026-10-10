@@ -24,7 +24,7 @@ if (config.apiKey && config.projectId) {
   // Handle background messages — show a notification automatically.
   messaging.onBackgroundMessage((payload) => {
     const { notification, data } = payload;
-    const title = notification?.title || "DayDial";
+    const title = notification?.title || "Arcelira";
     const options = {
       body: notification?.body || "",
       icon: "/icon-192.png",

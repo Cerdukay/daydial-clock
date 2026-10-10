@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // server/send-reminders/index.mjs
 //
-// Scheduled reminder dispatcher for DayDial. Runs every minute via
+// Scheduled reminder dispatcher for Arcelira. Runs every minute via
 // GitHub Actions (see .github/workflows/send-reminders.yml) against the
 // Neon Postgres database.
 //

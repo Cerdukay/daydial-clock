@@ -6,6 +6,7 @@ interface EventArcHandleProps {
   radius: number;
   label: string;
   active?: boolean | undefined;
+  minutesPerTurn?: number | undefined;
   /** Grows the visible grip in focus editing mode. */
   scale?: number | undefined;
   /** Invisible touch target radius (>= 44px on device). */
@@ -19,11 +20,12 @@ export function EventArcHandle({
   radius,
   label,
   active = false,
+  minutesPerTurn = 720,
   scale = 1,
   hitRadius = 24,
   onPointerDown,
 }: EventArcHandleProps) {
-  const point = polarToPoint(CX, CY, radius, minutesToAngle(minutes));
+  const point = polarToPoint(CX, CY, radius, minutesToAngle(minutes, minutesPerTurn));
   const grip = HANDLE_RADIUS * scale;
   return (
     <g

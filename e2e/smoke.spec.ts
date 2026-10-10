@@ -4,12 +4,12 @@ import { test, expect } from "@playwright/test";
  * Smoke test: verifies the app loads, the clock face renders,
  * and core navigation works.
  */
-test.describe("DayDial smoke journey", () => {
+test.describe("Arcelira smoke journey", () => {
   test("app loads and shows the clock view", async ({ page }) => {
     await page.goto("/");
 
     // The app should render the main heading or clock area
-    await expect(page).toHaveTitle(/DayDial/i);
+    await expect(page).toHaveTitle(/Arcelira/i);
 
     // Wait for the app shell to appear
     await page.waitForSelector("body", { state: "attached" });

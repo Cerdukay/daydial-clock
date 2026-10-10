@@ -1,11 +1,11 @@
 /**
- * Minimal RFC 5545 iCalendar (.ics) parser for DayDial import.
+ * Minimal RFC 5545 iCalendar (.ics) parser for Arcelira import.
  *
  * Extracts VEVENT entries and maps them to EventDraft objects. Handles
  * DTSTART, DTEND, SUMMARY, DESCRIPTION, LOCATION, RRULE, and EXDATE.
  *
  * This is a lightweight parser — it covers the common cases produced by
- * Google Calendar, Apple Calendar, and DayDial's own export. It is not a
+ * Google Calendar, Apple Calendar, and Arcelira's own export. It is not a
  * full RFC 5545 implementation.
  */
 
@@ -39,7 +39,7 @@ function parseICalDate(value: string): string | undefined {
   return date.toISOString();
 }
 
-/** Map iCal RRULE FREQ to DayDial RepeatRule. */
+/** Map iCal RRULE FREQ to Arcelira RepeatRule. */
 function rruleToRepeat(rrule: string): {
   repeat: RepeatRule;
   repeatUntil: string | null;
@@ -145,6 +145,7 @@ export function parseICal(content: string): EventDraft[] {
           location: current.location ?? "",
           notes: "",
           reminderMinutes: -1,
+          reminderDelivery: "notification",
           repeat,
           repeatUntil,
           repeatCount,

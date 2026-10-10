@@ -79,12 +79,12 @@ export async function syncWidgetData(
     await refreshWidget();
   } catch (err) {
     // Widget is a nice-to-have; never throw
-    console.warn("[DayDial] Widget sync failed:", err);
+    console.warn("[Arcelira] Widget sync failed:", err);
   }
 }
 
 /**
- * Send a broadcast to refresh all DayDial widgets immediately.
+ * Send a broadcast to refresh all Arcelira widgets immediately.
  * Uses the Capacitor @capacitor/android-intent or a direct plugin call.
  * Falls back gracefully if the intent plugin is not installed.
  */

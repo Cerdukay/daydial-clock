@@ -54,7 +54,7 @@ export function createTimeoutFetch(
       upstreamSignal?.addEventListener("abort", forwardAbort, { once: true });
     }
 
-    const timeoutError = new RequestTimeoutError("The DayDial data request timed out");
+    const timeoutError = new RequestTimeoutError("The Arcelira data request timed out");
     const timeout = setTimeout(() => controller.abort(timeoutError), timeoutMs);
 
     try {

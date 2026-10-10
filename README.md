@@ -1,4 +1,4 @@
-# DayDial — Radial Daily Planner
+# Arcelira — Radial Daily Planner
 
 See your whole day as colorful arcs around an analog clock. Drag to move, pinch to resize, and plan in seconds.
 
@@ -51,6 +51,17 @@ npx cap open android      # open in Android Studio
 ```
 
 Before building the Android app for push notifications, place your Firebase `google-services.json` at `android/app/google-services.json` (see `google-services.json.example` for the expected structure).
+
+### iOS (Capacitor)
+
+```sh
+npm run cap:sync:ios      # build SPA and sync the Swift Package Manager project
+npm run cap:open:ios      # open Xcode (requires a Mac)
+```
+
+Without a Mac, the manual `iOS build and TestFlight` workflow can compile on a GitHub macOS runner. `verify` builds for Simulator without Apple credentials; `testflight` requires distribution signing and App Store Connect secrets. Neither mode submits to App Review or publishes the app. See [the App Store release checklist](docs/app-store-release-plan.md).
+
+iOS uses local notifications and, on iOS 26+, a separately authorized AlarmKit bridge for real event alarms. Swift compilation and real-device delivery must be verified before release. Remote iOS push is not configured; APNs tokens are deliberately not sent to the Android/FCM worker.
 
 ## Testing
 

@@ -46,7 +46,7 @@ export async function registerFirebaseServiceWorker(): Promise<ServiceWorkerRegi
       const reg = await navigator.serviceWorker.register(swUrl, { scope: "/" });
       return reg;
     } catch (err) {
-      console.warn("[DayDial] Failed to register Firebase service worker:", err);
+      console.warn("[Arcelira] Failed to register Firebase service worker:", err);
       return null;
     }
   })();

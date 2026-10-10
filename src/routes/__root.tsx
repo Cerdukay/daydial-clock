@@ -17,13 +17,14 @@ import { I18nProvider } from "@/lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
 import { registerFirebaseServiceWorker } from "@/lib/notifications/sw-register";
 import { ErrorBoundary } from "@/components/daydial/ErrorBoundary";
+import { clerkPublishableKey } from "@/lib/clerk";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-xs text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Page not found</h1>
-        <p className="mt-2 text-sm text-muted-foreground">This screen doesn't exist in DayDial.</p>
+        <p className="mt-2 text-sm text-muted-foreground">This screen doesn't exist in Arcelira.</p>
         <div className="mt-6">
           <Link
             to="/"
@@ -81,11 +82,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
       { name: "theme-color", content: "#FAFAF8" },
-      { title: "DayDial — Plan your day around the clock" },
+      { title: "Arcelira — Plan your day around the clock" },
       {
         name: "description",
         content:
-          "DayDial is a calm radial daily planner. Place colorful time blocks around an analog clock and see your whole day at a glance.",
+          "Arcelira is a calm radial daily planner. Place colorful time blocks around an analog clock and see your whole day at a glance.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -167,14 +168,18 @@ function LocalizedApp() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const publishableKey =
-    import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"] || process.env["CLERK_PUBLISHABLE_KEY"];
+  const publishableKey = clerkPublishableKey();
 
   // Register the Firebase messaging service worker on the client side.
   // This is a no-op in SSR and Capacitor native.
   useEffect(() => {
     void registerFirebaseServiceWorker();
   }, []);
+
+  // The native entry already provides auth/query/planner state and lifecycle
+  // listeners. A second PlannerProvider would reconcile a different reminder
+  // list and overwrite alarms whenever the app resumes.
+  if (import.meta.env["VITE_SPA_SHELL"]) return <LocalizedApp />;
 
   // If Clerk key is missing or invalid, render without auth (guest-only mode).
   // This allows the app to work for local development and Capacitor builds

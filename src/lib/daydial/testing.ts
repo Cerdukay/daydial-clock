@@ -19,6 +19,7 @@ export function makeEvent(
     location: "",
     notes: "",
     reminderMinutes: 0,
+    reminderDelivery: "notification",
     repeat: "none",
 
     isCompleted: false,

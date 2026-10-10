@@ -15,14 +15,14 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign in — DayDial" },
+      { title: "Sign in — Arcelira" },
       {
         name: "description",
         content:
-          "Sign in or create a DayDial account to sync your radial day planner across devices.",
+          "Sign in or create an Arcelira account to sync your radial day planner across devices.",
       },
-      { property: "og:title", content: "Sign in — DayDial" },
-      { property: "og:description", content: "Sync your DayDial plan across every device." },
+      { property: "og:title", content: "Sign in — Arcelira" },
+      { property: "og:description", content: "Sync your Arcelira plan across every device." },
     ],
   }),
   component: AuthScreen,
