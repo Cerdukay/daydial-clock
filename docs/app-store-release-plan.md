@@ -80,6 +80,10 @@ Hesap sahibi misafir modundaki ilk imzalı IPA'yı **yalnızca TestFlight'a yük
 
 İlk imzalı deneme: [Run #3](https://github.com/Cerdukay/daydial-clock/actions/runs/38052964530), kaynak `561bdcf`, `mode=testflight`, `version=1.0`, `build_number=3`. Kontroller ve web/iOS eşitlemesi geçti; Apple keychain P12 içe aktarımı parola/biçim hatasıyla durdu. Arşiv veya IPA üretilmedi, Apple'a yükleme başlamadı. Yerelde OpenSSL 3.5.7 ile aynı P12'nin parolası ve MAC bütünlüğü doğrulandı; paket PBES2/AES-256/SHA-256 biçiminde. İmzalama script'ine runner üzerinde parola/MAC ön kontrolü ve Apple uyumlu geçici 3DES/SHA-1 PKCS#12 yeniden paketleme eklendi (100.000 iterasyon). Düz metin özel anahtar yalnızca pipe üzerinden bellekte aktarılır, diske/loga yazılmaz; uyumluluk paketi import sonrası veya hata halinde silinir. Yerel AES-256 yedeği ve GitHub secret değişmez. Düzeltmenin macOS sonucu henüz bekleniyor.
 
+İkinci imzalı deneme: [Run #4](https://github.com/Cerdukay/daydial-clock/actions/runs/38053526389), kaynak `05e1f88`, `mode=testflight`, `version=1.0`, `build_number=3`. Kontroller ve iOS web eşitlemesi yine geçti. Yeni ön kontrol `Mac verify error: invalid password?` ile durdu; GitHub'daki P12/parola çifti yerelde doğrulanan çiftle eşitlenmelidir. Uyumluluk dönüştürmesi, arşivleme ve Apple yükleme bu yüzden çalışmadı. App Store Connect oturumu kullanıcı tarafından yenilendi; Arcelira TestFlight ekranı **No Builds** gösteriyor.
+
+GitHub mevcut parola secret'ının eşitlenmesini **Re-authentication required** ile reddetti; kayıt başarılı sayılmaz. Doldurulmuş gizli alan, hata kontrolündeki araç çıktısında yanlışlıkla göründü. Alan temizlenip işlem iptal edildi; değer bu belgeye/loglara/commit'e eklenmez. Kullanıcıdan GitHub oturumunu yeniden doğrulaması ve mevcut sertifikayı koruyarak paket parolasını yenileme onayı istendi. Yeni sertifika/API anahtarı oluşturulmadı; bu iki adım tamamlanmadan tekrar build başlatılmaz. Yerel yedekler erişim kısıtlıdır; parola yenilemesi eski kopyaları kendiliğinden geçersiz kılmaz, yedek koruması da kontrollü biçimde yenilenmelidir.
+
 Bağımlılık yayın kontrolü: bulut `npm ci` raporu **25 uyarı (11 moderate, 10 high, 4 critical)** gösterdi. Bu sayılar çalışan uygulamanın aynı sayıda sömürülebilir açık taşıdığını tek başına kanıtlamaz; üretim/geliştirme kapsamı ve erişilebilirlik ayrıntıları yayın öncesi incelenmelidir. Ayrıntılı yerel `npm audit` sorgusu, bağımlılık metadata'sını npm kayıt defterine gönderdiği için otomatik onay denetimi tarafından engellendi; dış aktarım için kullanıcı onayı alınmadan başka yolla denenmez. `npm audit fix --force` veya geniş bağımlılık güncellemesi yapılmadı.
 
 1. Hazırlanan iOS kaynaklarını ve gerekli son uygulama değişikliklerini ayrı bir yayın dalında gözden geçirip GitHub'a gönder. Mevcut `main` dalında tüm güncel yerel özellikler bulunmadığından yalnızca workflow'u göndermek yeterli değildir. Lovable ile paylaşılan yayın geçmişi yeniden yazılmaz.
@@ -142,6 +146,8 @@ Hesap silme veya platforma özgü özellikleri gizlemek, bulut senkronizasyonunu
 - [Capacitor 8 geliştirme ortamı](https://capacitorjs.com/docs/getting-started/environment-setup)
 - [GitHub macOS code signing](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
 - [Apple build yükleme](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
+- [Apple PKCS#12 içe aktarma biçimi açıklaması](https://developer.apple.com/forums/thread/723242)
+- [OpenSSL PKCS#12 doğrulama ve dışa aktarma seçenekleri](https://docs.openssl.org/3.3/man1/openssl-pkcs12/)
 - [TestFlight iş akışı](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-workflow)
 - [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
 - [Preferences gizlilik bildirimi](https://capacitorjs.com/docs/apis/preferences)
