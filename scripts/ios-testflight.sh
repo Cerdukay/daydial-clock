@@ -22,7 +22,7 @@ cleanup() {
   security delete-keychain "$keychain_path" >/dev/null 2>&1 || true
   # Explicit files only. Never recursively remove a home/workspace directory.
   if [[ -n "$profile_path" ]]; then rm -f -- "$profile_path"; fi
-  rm -f -- "$signing_dir/distribution.p12" "$signing_dir/profile.mobileprovision" \
+  rm -f -- "$signing_dir/distribution.p12" "$signing_dir/apple-import.p12" "$signing_dir/profile.mobileprovision" \
     "$signing_dir/profile.plist" "$signing_dir/signing.json" "$key_path" "$signing_dir/ExportOptions.plist"
   rmdir "$signing_dir" 2>/dev/null || true
 }
@@ -76,8 +76,27 @@ keychain_password="$(openssl rand -hex 24)"
 security create-keychain -p "$keychain_password" "$keychain_path"
 security set-keychain-settings -lut 21600 "$keychain_path"
 security unlock-keychain -p "$keychain_password" "$keychain_path"
-security import "$signing_dir/distribution.p12" -P "$IOS_DISTRIBUTION_P12_PASSWORD" \
+
+# OpenSSL 3 exports PBES2/AES by default, which Apple's PKCS#12 importer can
+# misleadingly report as an incorrect password. Verify the original MAC and
+# password first; never bypass integrity verification or replace stored secrets.
+if ! openssl pkcs12 -in "$signing_dir/distribution.p12" \
+  -passin env:IOS_DISTRIBUTION_P12_PASSWORD -noout; then
+  echo '::error::Distribution P12 password/integrity verification failed before Apple import.'
+  exit 1
+fi
+# Repackage only on this ephemeral runner. The original AES-encrypted backup
+# and GitHub secret remain unchanged. Unencrypted PEM travels through a pipe,
+# never a file/log; the short-lived compatibility P12 remains password protected
+# with 3DES, a high iteration count, owner-only permissions, and trap cleanup.
+openssl pkcs12 -in "$signing_dir/distribution.p12" \
+  -passin env:IOS_DISTRIBUTION_P12_PASSWORD -nodes \
+  | openssl pkcs12 -export -in /dev/stdin -name 'Arcelira Apple Distribution' \
+      -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 -iter 100000 \
+      -passout env:IOS_DISTRIBUTION_P12_PASSWORD -out "$signing_dir/apple-import.p12"
+security import "$signing_dir/apple-import.p12" -P "$IOS_DISTRIBUTION_P12_PASSWORD" \
   -A -t cert -f pkcs12 -k "$keychain_path" >/dev/null
+rm -f -- "$signing_dir/apple-import.p12"
 security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$keychain_password" "$keychain_path" >/dev/null
 security list-keychains -d user -s "$keychain_path" login.keychain-db
 
