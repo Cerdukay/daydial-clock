@@ -22,7 +22,7 @@ public class ArceliraAlarmPlugin: CAPPlugin, CAPBridgedPlugin {
     // the WebView is stopped; UserDefaults keeps their IDs stable across launches.
     private let registryKey = "arcelira.alarmkit.registry.v1"
 
-    @objc func checkPermissions(_ call: CAPPluginCall) {
+    @objc public override func checkPermissions(_ call: CAPPluginCall) {
         Task { @MainActor in
             guard #available(iOS 26.0, *) else {
                 call.resolve(["supported": false, "alarm": "denied"])
@@ -32,7 +32,7 @@ public class ArceliraAlarmPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    @objc func requestPermissions(_ call: CAPPluginCall) {
+    @objc public override func requestPermissions(_ call: CAPPluginCall) {
         Task { @MainActor in
             guard #available(iOS 26.0, *) else {
                 call.resolve(["supported": false, "alarm": "denied"])
