@@ -1,8 +1,8 @@
 # Arcelira — App Store yayın planı
 
-Hazırlık tarihi: 9 Ekim 2026. Bu dosya bir yayın kontrol listesidir; iOS uygulamasının derlendiği, cihazda test edildiği veya Apple'a yüklendiği anlamına gelmez.
+Hazırlık tarihi: 9 Ekim 2026; son ilerleme: 10 Ekim 2026. Bu dosya bir yayın kontrol listesidir. İmzasız Simulator derlemesi aşağıda doğrulandı; cihaz testi veya Apple'a yükleme tamamlanmış değildir.
 
-Son yerel doğrulama: 195 birim testi, 2 Capacitor SPA tarayıcı testi ve TypeScript kontrolü geçti. Lint: 0 hata, 12 mevcut Fast Refresh uyarısı. iOS projesinin kaynak/plist/scheme yapısı ve workflow YAML/Bash sözdizimi kontrol edildi. Kullanıcı onayıyla ilk bulut kontrolü 10 Ekim 2026'da `verify` modunda çalıştı: [iOS build and TestFlight #1](https://github.com/Cerdukay/daydial-clock/actions/runs/38038140903), kaynak `22babdf`. Bulut `checks` işi geçti; Xcode 26.3 ile native derleme, izin metotlarındaki eksik `public override` nedeniyle başarısız oldu. İki metodun bildirimi düzeltildi; yeni derleme sonucu bekleniyor. İmzalama, TestFlight ve gerçek iPhone alarm teslimi **henüz doğrulanmadı**.
+Son bulut doğrulaması: [iOS build and TestFlight #2](https://github.com/Cerdukay/daydial-clock/actions/runs/38052123639), 10 Ekim 2026, kaynak `b5e0f20`, `mode=verify` **başarılı**. 195 birim testi, 2 Capacitor SPA tarayıcı testi, TypeScript ve lint geçti (0 hata, 12 mevcut Fast Refresh uyarısı). Xcode 26.3 / iOS SDK 26.2 ile gerçek, imzasız iOS Simulator Release derlemesi `BUILD SUCCEEDED` verdi. İlk kontroldeki eksik `public override` bildirimi düzeltildi. Bu, simülatörün çalıştırıldığı veya gerçek cihazda alarmın çaldığı anlamına gelmez. İmzalama, TestFlight ve gerçek iPhone alarm teslimi **henüz doğrulanmadı**.
 
 ## Kararlaştırılan yol
 
@@ -21,10 +21,10 @@ Son yerel doğrulama: 195 birim testi, 2 Capacitor SPA tarayıcı testi ve TypeS
 - [x] Uygulama adı Arcelira; onaylanan görselden 1024 × 1024, opak uygulama ikonu.
 - [x] UserDefaults kullanımı için `PrivacyInfo.xcprivacy` ve gerekli neden bildirimi.
 - [x] iOS bildirim sunumu, sistem bildirim sesi ve en yakın 64 standart bildirim kuyruğu için kod hazırlığı.
-- [x] AlarmKit native köprüsü, ayrı alarm izni, kalıcı alarm kimlikleri ve en yakın 64 alarm kuyruğu için kod hazırlığı (Swift derlemesi/cihaz doğrulaması bekliyor).
+- [x] AlarmKit native köprüsü, ayrı alarm izni, kalıcı alarm kimlikleri ve en yakın 64 alarm kuyruğu için kod hazırlığı (Swift derlemesi geçti; cihaz doğrulaması bekliyor).
 - [x] Birim testleri (195 geçti), TypeScript kontrolü, lint (0 hata, 12 mevcut geliştirme uyarısı) ve Capacitor web derlemesi/iOS asset eşitlemesi.
 - [x] Bulut anahtarları olmadan gerçek Capacitor SPA girişinde ilk açılış, tek bildirim sunumu, saat biçimi ve etkinlik kalıcılığı (2 tarayıcı testi).
-- [ ] macOS'ta iOS Simulator için gerçek Swift/Xcode derlemesi.
+- [x] GitHub macOS runner'ında Xcode 26.3 ile iOS Simulator için gerçek Swift/Xcode Release derlemesi (`verify` #2 başarılı).
 
 Native açılışta tek PlannerProvider kullanılır. Etkinlik değişikliğinde WebView cleanup'ı tüm OS alarmlarını silmez; girişli liste ağdan gelmeden boş listeyle alarm iptali yapılmaz. AlarmKit kayıtları sabit kimliklerle uzlaştırılır; durdurulan alarmın yeniden açılışta tekrar çalması önlenir. Bu davranışların native kısmı yine cihazda test edilmelidir.
 
@@ -74,6 +74,10 @@ Team ID ve profil UUID'si profilin içinden okunur. Sertifika/profil dosyaları 
 
 İlk gerçek native derleme: macOS 15.7.9 / Xcode 26.3 / iOS SDK 26.2. Node kurulumu, Capacitor SPA derlemesi, SPM eşitlemesi ve paket çözümü geçti. `ArceliraAlarmPlugin.checkPermissions` ve `requestPermissions`, `CAPPlugin` üzerindeki açık metotları geçersiz kıldığı için `public override` gerektiriyordu; Swift derleyicisi dört erişim/override hatası bildirdi. Yalnızca bu iki bildirime düzeltme yapıldı. Tanı artifact'i: `ios-simulator-diagnostics-1`, artifact ID `11664641733`. TestFlight işi seçilmedi ve atlandı.
 
+İkinci bulut kontrolü: düzeltme commit'i **`b5e0f20`**, aynı yayın dalı / `mode=verify` / `version=1.0`. [Run #2](https://github.com/Cerdukay/daydial-clock/actions/runs/38052123639) **Success**, toplam **3 dakika 46 saniye**. `checks` ve `verify` işleri geçti; native log **BUILD SUCCEEDED**. Tanı artifact'i `ios-simulator-diagnostics-2` (ID `11669731683`); simülatör `.app` artifact'i `Arcelira-simulator-2` (ID `11669926393`, yaklaşık 5,1 MB zip). Artifact'ler 7 gün saklanır. Simülatör çıktısı gerçek iPhone'a kurulamaz. TestFlight işi yine seçilmedi ve atlandı; Apple'a yükleme veya App Review gönderimi yapılmadı. Kanıt: `qa/ios/arcelira-ios-verification-passed.png`.
+
+Sıradaki onaylı aşama: imzalı IPA oluşturma ve yalnızca TestFlight'a yükleme. Şu an GitHub istemci variables değerleri boş olduğundan test build'i **misafir modu** kapsamındadır; giriş/bulut senkronizasyonu doğrulanmış değildir. Bu geçici ilk test kapsamı, mağazaya çıkacak kalıcı özellik kararı değildir. Hesap sahibinden bu kapsamla TestFlight çalıştırması için onay alınıp ardından iPhone 12 kabul testine geçilir.
+
 Bağımlılık yayın kontrolü: bulut `npm ci` raporu **25 uyarı (11 moderate, 10 high, 4 critical)** gösterdi. Bu sayılar çalışan uygulamanın aynı sayıda sömürülebilir açık taşıdığını tek başına kanıtlamaz; üretim/geliştirme kapsamı ve erişilebilirlik ayrıntıları yayın öncesi incelenmelidir. Ayrıntılı yerel `npm audit` sorgusu, bağımlılık metadata'sını npm kayıt defterine gönderdiği için otomatik onay denetimi tarafından engellendi; dış aktarım için kullanıcı onayı alınmadan başka yolla denenmez. `npm audit fix --force` veya geniş bağımlılık güncellemesi yapılmadı.
 
 1. Hazırlanan iOS kaynaklarını ve gerekli son uygulama değişikliklerini ayrı bir yayın dalında gözden geçirip GitHub'a gönder. Mevcut `main` dalında tüm güncel yerel özellikler bulunmadığından yalnızca workflow'u göndermek yeterli değildir. Lovable ile paylaşılan yayın geçmişi yeniden yazılmaz.
@@ -92,7 +96,7 @@ Bulut çalışma ortamında `.env` dosyası yoktur. Giriş/senkronizasyon isteni
 | Konu | Mevcut kanıt | Yayın geçiş ölçütü |
 | --- | --- | --- |
 | Yerel bildirim | Android kanalları kullanılıyor; iOS sesi ayrıca verilmelidir | Arka planda ve kilitli ekranda gerçek iPhone'da teslim/ses/tıklama testi |
-| Alarm | iOS 26+ AlarmKit köprüsü ve bağımsız izin akışı yazıldı; yerel JS testleri var, native build/cihaz testi yapılmadı | Alarmı seçip izin verme; sessiz/Focus/kilitli ekranda çalma, durdurma, değiştirme/silme ve yeniden açınca tekrar çalmama testi |
+| Alarm | iOS 26+ AlarmKit köprüsü ve bağımsız izin akışı yazıldı; JS testleri ve Xcode Simulator derlemesi geçti, gerçek cihaz testi yapılmadı | Alarmı seçip izin verme; sessiz/Focus/kilitli ekranda çalma, durdurma, değiştirme/silme ve yeniden açınca tekrar çalmama testi |
 | Sunucu push | iOS APNs token'ının yanlışlıkla Android/FCM olarak kaydedilmesi engellendi; iOS remote push yapılandırılmadı, worker durduruldu | APNs/FCM köprüsü ve aktif sunucu işi gerçek cihazda uçtan uca doğrulanır; aksi halde yalnızca cihazda planlanan yerel bildirim/alarm kapsamı |
 | Giriş | Clerk bileşeni varsa hesap açılabiliyor; sosyal girişler Clerk paneline bağlı | iOS giriş/oturum devamı doğrulanır; sosyal giriş varsa Apple giriş kuralı kontrol edilir |
 | Hesap silme | Gizlilik metni Ayarlar'dan silme vaat ediyor; Ayarlar'da bu eylem yok | Girişli sürümde hesap ve ilişkili veriler için uygulama içinden silme akışı uygulanır, test edilir |
