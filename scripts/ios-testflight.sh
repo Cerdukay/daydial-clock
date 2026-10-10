@@ -76,7 +76,8 @@ with (folder / 'ExportOptions.plist').open('wb') as destination:
 PY
 team_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["team"])' "$signing_dir/signing.json")"
 profile_uuid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["uuid"])' "$signing_dir/signing.json")"
-profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+# The workflow requires Xcode 26; Xcode 16+ uses the UserData location.
+profile_dir="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 mkdir -p "$profile_dir"
 profile_target="$profile_dir/$profile_uuid.mobileprovision"
 [[ ! -e "$profile_target" ]] || { echo '::error::Unexpected existing provisioning profile'; exit 1; }
