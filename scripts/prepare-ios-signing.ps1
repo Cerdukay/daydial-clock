@@ -43,7 +43,9 @@ $keyPath = Join-Path $signingRoot 'distribution-encrypted.key'
 $passwordPath = Join-Path $signingRoot 'distribution-password.dpapi'
 $requestPath = Join-Path $signingRoot 'ArceliraDistribution.certSigningRequest'
 $p12Path = Join-Path $signingRoot 'ArceliraDistribution.p12'
+$priorSigningEnvironment = $env:ARCELIRA_SIGNING_PASSWORD
 
+try {
 if ($Mode -eq 'request') {
   foreach ($target in @($keyPath, $requestPath)) {
     if (Test-Path -LiteralPath $target) { throw 'Existing signing material found; refusing to overwrite.' }
@@ -61,9 +63,10 @@ if ($Mode -eq 'request') {
     # DPAPI encrypts the password for the current Windows user and computer.
     [System.IO.File]::WriteAllText($passwordPath, (ConvertFrom-SecureString $securePassword))
   }
-  $signingPassword | & $opensslPath genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -aes-256-cbc -pass stdin -out $keyPath 2>$null
+  $env:ARCELIRA_SIGNING_PASSWORD = $signingPassword
+  & $opensslPath genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -aes-256-cbc -pass env:ARCELIRA_SIGNING_PASSWORD -out $keyPath 2>$null
   if ($LASTEXITCODE -ne 0) { throw 'Encrypted RSA key generation failed.' }
-  $signingPassword | & $opensslPath req -new -sha256 -key $keyPath -passin stdin -subj '/CN=Arcelira Distribution' -out $requestPath
+  & $opensslPath req -new -sha256 -key $keyPath -passin env:ARCELIRA_SIGNING_PASSWORD -subj '/CN=Arcelira Distribution' -out $requestPath
   if ($LASTEXITCODE -ne 0) { throw 'Certificate request generation failed.' }
   & $opensslPath req -in $requestPath -noout -verify
   if ($LASTEXITCODE -ne 0) { throw 'Certificate request verification failed.' }
@@ -75,6 +78,7 @@ if ($Mode -eq 'request') {
   if (Test-Path -LiteralPath $p12Path) { throw 'Existing P12 found; refusing to overwrite.' }
   $securePassword = ConvertTo-SecureString ([System.IO.File]::ReadAllText($passwordPath))
   $signingPassword = (New-Object System.Net.NetworkCredential('', $securePassword)).Password
+  $env:ARCELIRA_SIGNING_PASSWORD = $signingPassword
   $pemPath = Join-Path $signingRoot 'distribution-certificate.pem'
   if (Test-Path -LiteralPath $pemPath) { throw 'Existing certificate PEM found; refusing to overwrite.' }
   & $opensslPath x509 -inform DER -in $CertificatePath -out $pemPath
@@ -85,16 +89,19 @@ if ($Mode -eq 'request') {
     throw 'Certificate does not belong to the approved Apple team.'
   }
   $certificateModulus = & $opensslPath x509 -in $pemPath -noout -modulus
-  $keyModulus = $signingPassword | & $opensslPath rsa -in $keyPath -passin stdin -noout -modulus 2>$null
+  $keyModulus = & $opensslPath rsa -in $keyPath -passin env:ARCELIRA_SIGNING_PASSWORD -noout -modulus 2>$null
   if ($LASTEXITCODE -ne 0 -or $certificateModulus -ne $keyModulus) {
     throw 'Apple certificate does not match the generated private key.'
   }
-  # With stdin used for both inputs OpenSSL reads the password twice.
-  @($signingPassword, $signingPassword) | & $opensslPath pkcs12 -export -inkey $keyPath -in $pemPath -name 'Arcelira Apple Distribution' -passin stdin -passout stdin -out $p12Path
+  # Avoid PowerShell stdin line endings becoming part of an OpenSSL password.
+  & $opensslPath pkcs12 -export -inkey $keyPath -in $pemPath -name 'Arcelira Apple Distribution' -passin env:ARCELIRA_SIGNING_PASSWORD -passout env:ARCELIRA_SIGNING_PASSWORD -out $p12Path
   if ($LASTEXITCODE -ne 0) { throw 'Encrypted P12 export failed.' }
-  $signingPassword | & $opensslPath pkcs12 -in $p12Path -passin stdin -info -noout 2>$null
+  & $opensslPath pkcs12 -in $p12Path -passin env:ARCELIRA_SIGNING_PASSWORD -info -noout 2>$null
   if ($LASTEXITCODE -ne 0) { throw 'P12 verification failed.' }
   Write-Output "Verified encrypted P12: $p12Path"
 }
-$signingPassword = $null
-$securePassword = $null
+} finally {
+  $env:ARCELIRA_SIGNING_PASSWORD = $priorSigningEnvironment
+  $signingPassword = $null
+  $securePassword = $null
+}
