@@ -33,7 +33,7 @@ cleanup() {
   security delete-keychain "$keychain_path" >/dev/null 2>&1 || true
   # Explicit files only. Never recursively remove a home/workspace directory.
   if [[ -n "$profile_path" ]]; then rm -f -- "$profile_path"; fi
-  rm -f -- "$signing_dir/distribution.p12" "$signing_dir/apple-import.p12" "$signing_dir/profile.mobileprovision" \
+  rm -f -- "$signing_dir/distribution.p12" "$signing_dir/apple-import.p12" "$signing_dir/import-encrypted.pem" "$signing_dir/profile.mobileprovision" \
     "$signing_dir/profile.plist" "$signing_dir/signing.json" "$key_path" "$signing_dir/ExportOptions.plist"
   rmdir "$signing_dir" 2>/dev/null || true
 }
@@ -98,17 +98,20 @@ if ! "$openssl_bin" pkcs12 -in "$signing_dir/distribution.p12" \
   exit 1
 fi
 # Repackage only on this ephemeral runner. The original AES-encrypted backup
-# and GitHub secret remain unchanged. Unencrypted PEM travels through a pipe,
-# never a file/log; the short-lived compatibility P12 remains password protected
-# with 3DES, a high iteration count, owner-only permissions, and trap cleanup.
+# and GitHub secret remain unchanged. The intermediate PEM is AES-256 encrypted,
+# never an unencrypted private-key file/log. Export needs a seekable PEM because
+# OpenSSL reads its key and certificates separately. The compatibility P12 uses
+# 3DES, a high iteration count, owner-only permissions, and trap cleanup.
 "$openssl_bin" pkcs12 -in "$signing_dir/distribution.p12" \
-  -passin env:IOS_DISTRIBUTION_P12_PASSWORD -nodes \
-  | "$openssl_bin" pkcs12 -export -in /dev/stdin -name 'Arcelira Apple Distribution' \
-      -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 -iter 100000 \
-      -passout env:IOS_DISTRIBUTION_P12_PASSWORD -out "$signing_dir/apple-import.p12"
+  -passin env:IOS_DISTRIBUTION_P12_PASSWORD -passout env:IOS_DISTRIBUTION_P12_PASSWORD \
+  -aes256 -out "$signing_dir/import-encrypted.pem"
+"$openssl_bin" pkcs12 -export -in "$signing_dir/import-encrypted.pem" \
+  -passin env:IOS_DISTRIBUTION_P12_PASSWORD -name 'Arcelira Apple Distribution' \
+  -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 -iter 100000 \
+  -passout env:IOS_DISTRIBUTION_P12_PASSWORD -out "$signing_dir/apple-import.p12"
 security import "$signing_dir/apple-import.p12" -P "$IOS_DISTRIBUTION_P12_PASSWORD" \
   -A -t cert -f pkcs12 -k "$keychain_path" >/dev/null
-rm -f -- "$signing_dir/apple-import.p12"
+rm -f -- "$signing_dir/apple-import.p12" "$signing_dir/import-encrypted.pem"
 security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$keychain_password" "$keychain_path" >/dev/null
 security list-keychains -d user -s "$keychain_path" login.keychain-db
 
