@@ -14,6 +14,17 @@ done
 [[ "$ASC_KEY_ID" =~ ^[A-Z0-9]{10}$ ]] || { echo '::error::Invalid App Store Connect Key ID'; exit 1; }
 [[ "$ASC_ISSUER_ID" =~ ^[a-fA-F0-9-]{36}$ ]] || { echo '::error::Invalid App Store Connect Issuer ID'; exit 1; }
 
+# macOS's /usr/bin/openssl is LibreSSL and does not implement pkcs12 -iter.
+# Use the already-installed Homebrew OpenSSL; do not download/install tools or
+# weaken the compatibility package's iteration count to work around this.
+openssl_bin="$(command -v openssl)"
+if ! "$openssl_bin" pkcs12 -help 2>&1 | grep -- '-iter ' >/dev/null; then
+  openssl_prefix="$(HOMEBREW_NO_AUTO_UPDATE=1 brew --prefix openssl@3)"
+  openssl_bin="$openssl_prefix/bin/openssl"
+fi
+[[ -x "$openssl_bin" ]] || { echo '::error::Installed OpenSSL is unavailable'; exit 1; }
+"$openssl_bin" version
+
 signing_dir="$(mktemp -d "$RUNNER_TEMP/arcelira-signing.XXXXXX")"
 keychain_path="$signing_dir/arcelira.keychain-db"
 profile_path=''
@@ -72,7 +83,7 @@ profile_target="$profile_dir/$profile_uuid.mobileprovision"
 profile_path="$profile_target"
 cp "$signing_dir/profile.mobileprovision" "$profile_path"
 
-keychain_password="$(openssl rand -hex 24)"
+keychain_password="$("$openssl_bin" rand -hex 24)"
 security create-keychain -p "$keychain_password" "$keychain_path"
 security set-keychain-settings -lut 21600 "$keychain_path"
 security unlock-keychain -p "$keychain_password" "$keychain_path"
@@ -80,7 +91,7 @@ security unlock-keychain -p "$keychain_password" "$keychain_path"
 # OpenSSL 3 exports PBES2/AES by default, which Apple's PKCS#12 importer can
 # misleadingly report as an incorrect password. Verify the original MAC and
 # password first; never bypass integrity verification or replace stored secrets.
-if ! openssl pkcs12 -in "$signing_dir/distribution.p12" \
+if ! "$openssl_bin" pkcs12 -in "$signing_dir/distribution.p12" \
   -passin env:IOS_DISTRIBUTION_P12_PASSWORD -noout; then
   echo '::error::Distribution P12 password/integrity verification failed before Apple import.'
   exit 1
@@ -89,9 +100,9 @@ fi
 # and GitHub secret remain unchanged. Unencrypted PEM travels through a pipe,
 # never a file/log; the short-lived compatibility P12 remains password protected
 # with 3DES, a high iteration count, owner-only permissions, and trap cleanup.
-openssl pkcs12 -in "$signing_dir/distribution.p12" \
+"$openssl_bin" pkcs12 -in "$signing_dir/distribution.p12" \
   -passin env:IOS_DISTRIBUTION_P12_PASSWORD -nodes \
-  | openssl pkcs12 -export -in /dev/stdin -name 'Arcelira Apple Distribution' \
+  | "$openssl_bin" pkcs12 -export -in /dev/stdin -name 'Arcelira Apple Distribution' \
       -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 -iter 100000 \
       -passout env:IOS_DISTRIBUTION_P12_PASSWORD -out "$signing_dir/apple-import.p12"
 security import "$signing_dir/apple-import.p12" -P "$IOS_DISTRIBUTION_P12_PASSWORD" \
