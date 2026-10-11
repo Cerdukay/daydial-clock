@@ -151,6 +151,8 @@ export const tr: Dict = {
   "labelStyle.later": "Şimdi değil — sonra Ayarlar'dan değiştirin",
 
   "settings.title": "Ayarlar",
+  "settings.support": "Destek",
+  "settings.privacy": "Gizlilik Politikası",
   "settings.appearance": "Görünüm",
   "settings.language": "Dil",
   "settings.languageHint": "Tüm uygulamada geçerlidir.",

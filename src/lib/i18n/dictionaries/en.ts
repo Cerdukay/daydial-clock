@@ -150,6 +150,8 @@ export const en = {
   "labelStyle.later": "Not now — change it later in Settings",
 
   "settings.title": "Settings",
+  "settings.support": "Support",
+  "settings.privacy": "Privacy Policy",
   "settings.appearance": "Appearance",
   "settings.language": "Language",
   "settings.languageHint": "Applies across the whole app.",

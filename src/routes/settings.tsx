@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Bell, BellOff, Calendar, Download, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { exportToICal, downloadICal, parseICal } from "@/lib/calendar";
 import { NOTIFICATION_SOUNDS, type NotificationSound } from "@/lib/daydial/types";
 import { previewNotificationSound } from "@/lib/notifications/sounds";
 import { clerkPublishableKey } from "@/lib/clerk";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
 
 const NOTIFICATION_SOUND_KEYS: Record<NotificationSound, DictKey> = {
   none: "notifications.soundSilent",
@@ -411,7 +412,7 @@ function SettingsScreen() {
         </div>
       </section>
 
-      <section className="space-y-2 pb-10" aria-label={t("settings.account")}>
+      <section className="space-y-2 pb-4" aria-label={t("settings.account")}>
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t("settings.account")}
         </h2>
@@ -461,6 +462,19 @@ function SettingsScreen() {
             </button>
           </div>
         )}
+      </section>
+      <section className="space-y-2 pb-10" aria-label={t("settings.support")}>
+        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t("settings.support")}
+        </h2>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <a href={SUPPORT_MAILTO} className="block break-all py-2 text-sm text-primary underline">
+            {SUPPORT_EMAIL}
+          </a>
+          <Link to="/privacy" className="block py-2 text-sm text-primary underline">
+            {t("settings.privacy")}
+          </Link>
+        </div>
       </section>
     </AppShell>
   );

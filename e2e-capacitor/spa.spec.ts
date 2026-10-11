@@ -1,5 +1,22 @@
 import { expect, test } from "@playwright/test";
 
+test("guest settings exposes working support and privacy navigation", async ({ page }) => {
+  await page.goto("/settings");
+  await expect(page.getByRole("link", { name: "palamutapp@gmail.com" })).toHaveAttribute(
+    "href",
+    "mailto:palamutapp@gmail.com",
+  );
+  await page.getByRole("link", { name: "Privacy Policy", exact: true }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { name: "Privacy Policy", exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Account sign-in, cloud synchronization and server push are not enabled/),
+  ).toBeVisible();
+  await expect(page.getByRole("region", { name: "Optional account services" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+});
+
 test("credential-free SPA opens, has one toaster, and persists the first time-format choice", async ({
   page,
 }) => {
