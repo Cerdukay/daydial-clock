@@ -1,5 +1,31 @@
 import { expect, test } from "@playwright/test";
 
+test("bundled fonts load without any external network requests", async ({ page }) => {
+  const externalRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).origin !== "http://127.0.0.1:4181") {
+      externalRequests.push(request.url());
+    }
+  });
+  // Fail external traffic even when an old Google Fonts URL is accidentally reintroduced.
+  await page.route("https://**/*", (route) => route.abort());
+  await page.goto("/settings");
+  const loaded = await page.evaluate(async () => {
+    const sample = "Türkçe ĞİŞğış Русский Ελληνικά Tiếng Việt";
+    const inter = await Promise.all(
+      [400, 500, 600, 700].map((weight) => document.fonts.load(weight + ' 16px "Inter"', sample)),
+    );
+    const serif = await document.fonts.load('400 20px "DM Serif Display"', "Türkçe ĞİŞğış");
+    return (
+      inter.every((faces) => faces.length > 0 && faces.every((font) => font.status === "loaded")) &&
+      serif.length > 0 &&
+      serif.every((font) => font.status === "loaded")
+    );
+  });
+  expect(loaded).toBe(true);
+  expect(externalRequests).toEqual([]);
+});
+
 test("guest settings exposes working support and privacy navigation", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByRole("link", { name: "palamutapp@gmail.com" })).toHaveAttribute(

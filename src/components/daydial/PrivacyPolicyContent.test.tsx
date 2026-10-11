@@ -12,7 +12,7 @@ describe("edition-specific privacy policy", () => {
       screen.getByText(/Account sign-in, cloud synchronization and server push are not enabled/),
     ).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Optional account services" })).toBeNull();
-    expect(screen.getByText(/Google Fonts/)).toBeTruthy();
+    expect(screen.getByText(/This edition bundles its typefaces inside the app/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "palamutapp@gmail.com" }).getAttribute("href")).toBe(
       "mailto:palamutapp@gmail.com",
     );

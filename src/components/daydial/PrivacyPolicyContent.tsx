@@ -70,11 +70,12 @@ export function PrivacyPolicyContent({
       ) : null}
       <h2>Network services</h2>
       <p>
-        Some editions, including the current iPhone build, load typefaces from Google Fonts. A font
-        request conveys connection information such as your IP address to the font service. Event
-        titles and notes are not included in font request URLs. See{" "}
-        <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a>. The planner does
-        not include advertising or cross-app tracking functionality.
+        This edition bundles its typefaces inside the app; loading a typeface does not contact
+        Google Fonts. Older editions, including iPhone builds 3 and 4, requested Google Fonts and
+        conveyed connection information such as an IP address to that service, without putting event
+        titles or notes in font request URLs. See{" "}
+        <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a> for those older
+        editions. The planner does not include advertising or cross-app tracking functionality.
       </p>
       <h2>Retention and deletion</h2>
       <p>
