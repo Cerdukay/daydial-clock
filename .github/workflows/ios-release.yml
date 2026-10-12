@@ -5,11 +5,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Verify native build or upload a signed build to TestFlight
+        description: Verify native build, capture simulator screenshots, or upload to TestFlight
         required: true
         type: choice
         default: verify
-        options: [verify, testflight]
+        options: [verify, screenshots, testflight]
       version:
         description: App Store version (must match the app's version record)
         required: true
@@ -93,6 +93,42 @@ jobs:
           name: Arcelira-simulator-${{ github.run_number }}
           path: build/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
           retention-days: 7
+
+  screenshots:
+    if: inputs.mode == 'screenshots'
+    needs: checks
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Select Xcode 26 SDK
+        run: bash scripts/select-ios-xcode.sh
+      - run: npm ci
+      - name: Build the credential-free guest edition of build 5
+        run: npm run cap:sync:ios
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ""
+          VITE_NEON_DATA_API_URL: ""
+      # Only an ephemeral test target is generated; no signing/upload is used.
+      - name: Capture real iPhone and iPad simulator screenshots
+        run: bash scripts/ios-screenshots/capture.sh
+      - name: Save screenshots and native UI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: Arcelira-store-screenshots-${{ github.run_number }}
+          path: |
+            build/ios/screenshots/*-attachments/
+            build/ios/screenshots/*.log
+            build/ios/screenshots/provenance.json
+          retention-days: 7
+          if-no-files-found: warn
 
   testflight:
     if: inputs.mode == 'testflight'
