@@ -10,6 +10,9 @@ tests.source_build_phase.add_file_reference(group.new_file('Screenshots.swift'))
 tests.build_configurations.each do |config|
   config.build_settings.merge!({
     'TEST_TARGET_NAME' => 'App',
+    # This existing project sets PRODUCT_NAME only on App, not at project level.
+    # Xcodeproj's new UI-test target otherwise inherits an empty product name.
+    'PRODUCT_NAME' => '$(TARGET_NAME)',
     'PRODUCT_BUNDLE_IDENTIFIER' => 'com.daydial.app.screenshot-tests',
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'SWIFT_VERSION' => '5.0',
