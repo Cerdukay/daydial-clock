@@ -85,7 +85,9 @@ final class Screenshots: XCTestCase {
         tap("Evening (PM)")
         try capture("04-evening-12h")
         tap("Agenda")
-        XCTAssertTrue(control("Standup").waitForExistence(timeout: 15))
+        // Agenda accessibility combines title, time range and category in one
+        // button label (observed: "Standup 9:15 AM – 9:45 AM Work").
+        XCTAssertTrue(control("Standup", contains: true).waitForExistence(timeout: 15), app.debugDescription)
         try capture("05-agenda")
         tap("New event")
         let title = app.textFields["Event title"]
