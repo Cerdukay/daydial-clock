@@ -98,7 +98,7 @@ jobs:
     if: inputs.mode == 'screenshots'
     needs: checks
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
