@@ -8,8 +8,14 @@ export GEM_PATH="$(ruby -e 'puts Gem.user_dir'):${GEM_PATH:-}"
 ruby scripts/ios-screenshots/prepare.rb
 read -r runtime_id iphone_type ipad_type < <(node scripts/ios-screenshots/collect.mjs select)
 active_simulator=""
+device_set="${SCREENSHOT_DEVICE:-both}"
+case "$device_set" in
+  both) families=(iphone ipad) ;;
+  iphone|ipad) families=("$device_set") ;;
+  *) echo "Unsupported screenshot device set: $device_set" >&2; exit 1 ;;
+esac
 trap 'if [[ -n "$active_simulator" ]]; then xcrun simctl shutdown "$active_simulator" || true; fi' EXIT
-for family in iphone ipad; do
+for family in "${families[@]}"; do
   if [[ "$family" == iphone ]]; then device_type="$iphone_type"; else device_type="$ipad_type"; fi
   active_simulator="$(xcrun simctl create "Arcelira store $family" "$device_type" "$runtime_id")"
   xcrun simctl boot "$active_simulator"
@@ -29,4 +35,4 @@ for family in iphone ipad; do
   active_simulator=""
   [[ "$native_status" == 0 ]] || exit "$native_status"
 done
-node scripts/ios-screenshots/collect.mjs verify "$output_dir"
+node scripts/ios-screenshots/collect.mjs verify "$output_dir" "$device_set"

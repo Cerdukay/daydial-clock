@@ -48,6 +48,10 @@ function jpegSize(data) {
 if (process.argv[2] !== "verify" || !process.argv[3])
   throw new Error("Use select or verify <directory>");
 const root = process.argv[3];
+const deviceSet = process.argv[4] ?? "both";
+if (!["both", "iphone", "ipad"].includes(deviceSet))
+  throw new Error("Unsupported screenshot device set");
+const expectedFamilies = deviceSet === "both" ? ["iphone", "ipad"] : [deviceSet];
 const screenshots = files(root)
   .filter((path) => /\.(jpe?g)$/i.test(path))
   .map((path) => {
@@ -64,13 +68,14 @@ const screenshots = files(root)
       sha256: createHash("sha256").update(bytes).digest("hex"),
     };
   });
-for (const family of ["iphone", "ipad"]) {
+for (const family of expectedFamilies) {
   if (screenshots.filter((s) => s.family === family).length < 6)
     throw new Error(`Missing full ${family} screenshot set`);
 }
 const provenance = {
   sourceCommit: process.env.GITHUB_SHA,
   baseProductCommit: "87c692989cf821ff2ff8f7684d0a6da771635173",
+  deviceSet,
   capture: "XCUIScreen on real iOS Simulator; no web viewport or composited UI",
   screenshots,
 };

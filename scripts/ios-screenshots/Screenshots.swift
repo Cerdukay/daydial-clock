@@ -97,8 +97,8 @@ final class Screenshots: XCTestCase {
         tap("Save event")
         XCTAssertTrue(control("How should this reminder arrive?").waitForExistence(timeout: 15))
         try capture("06-reminder-choice")
-        // Leave without scheduling a test alarm or saving another event.
-        tap("Cancel")
+        // The delivery chooser has not saved or scheduled anything. Terminate
+        // instead of assuming a Cancel button exists in the shipped chooser.
         app.terminate()
     }
 }
