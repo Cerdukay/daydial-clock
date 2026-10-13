@@ -10,7 +10,8 @@ if (process.argv[2] === "select") {
   const runtime = inventory.runtimes
     .filter((r) => r.isAvailable && /^iOS /.test(r.name) && Number(r.version.split(".")[0]) >= 26)
     .sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }))[0];
-  const phone = ["iPhone 16", "iPhone 17", "iPhone 15 Pro", "iPhone 16 Pro"]
+  // Apple's required primary iPhone slot uses the large display set.
+  const phone = ["iPhone 16 Pro Max", "iPhone 17 Pro Max", "iPhone 15 Pro Max"]
     .map((name) => inventory.devicetypes.find((d) => d.name === name))
     .find(Boolean);
   const tablet = inventory.devicetypes.find((d) => /^iPad Pro 13-inch/.test(d.name));
@@ -53,7 +54,7 @@ const screenshots = files(root)
     const bytes = readFileSync(path);
     const size = jpegSize(bytes);
     const family = path.includes("iphone-attachments") ? "iphone" : "ipad";
-    const accepted = family === "iphone" ? ["1179x2556", "1206x2622"] : ["2064x2752", "2048x2732"];
+    const accepted = family === "iphone" ? ["1320x2868", "1290x2796"] : ["2064x2752", "2048x2732"];
     if (!accepted.includes(`${size.width}x${size.height}`))
       throw new Error(`Unsupported ${family} size: ${JSON.stringify(size)}`);
     return {

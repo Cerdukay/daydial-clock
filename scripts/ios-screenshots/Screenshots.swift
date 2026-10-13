@@ -1,12 +1,13 @@
 import XCTest
 import UIKit
+import ImageIO
 
 @MainActor
 final class Screenshots: XCTestCase {
     let app = XCUIApplication(bundleIdentifier: "com.daydial.app")
 
     func control(_ text: String, contains: Bool = false) -> XCUIElement {
-        let predicate = NSPredicate(format: contains ? "label CONTAINS[c] %@" : "label == %@ OR identifier == %@", argumentArray: contains ? [text] : [text, text])
+        let predicate = NSPredicate(format: contains ? "label CONTAINS[c] %@" : "label ==[c] %@ OR identifier == %@", argumentArray: contains ? [text] : [text, text])
         let button = app.buttons.matching(predicate).firstMatch
         if button.exists { return button }
         if contains {
@@ -31,9 +32,16 @@ final class Screenshots: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(1))
         let family = UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
         let screenshot = XCUIScreen.main.screenshot()
-        // Encode the original full-resolution native capture, without alpha.
-        let bytes = try XCTUnwrap(screenshot.image.jpegData(compressionQuality: 1.0))
-        let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.jpeg")
+        // Encode source pixels directly. UIImage's point/scale conversion lost
+        // one pixel in the first capture; never resize a native capture to fit.
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(screenshot.pngRepresentation as CFData, nil))
+        let pixels = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        let bytes = NSMutableData()
+        let destination = try XCTUnwrap(CGImageDestinationCreateWithData(bytes, "public.jpeg" as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, pixels, [kCGImageDestinationLossyCompressionQuality: 1.0] as CFDictionary)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        print("Native capture \(name): \(pixels.width)x\(pixels.height)")
+        let attachment = XCTAttachment(data: bytes as Data, uniformTypeIdentifier: "public.jpeg")
         attachment.name = "arcelira-\(family)-\(name)"
         attachment.lifetime = .keepAlways
         add(attachment)
@@ -43,7 +51,11 @@ final class Screenshots: XCTestCase {
         add(tree)
     }
     func chooseTimeFormat(_ value: String) {
-        tap("Time format")
+        // WKWebView exposes both a non-interactive text label and the select.
+        // The observed native select is an Other element with a current value.
+        let select = app.otherElements.matching(NSPredicate(format: "label == %@ AND value == %@", "Time format", "24-hour")).firstMatch
+        XCTAssertTrue(select.waitForExistence(timeout: 15), app.debugDescription)
+        select.tap()
         let wheel = app.pickerWheels.firstMatch
         if wheel.waitForExistence(timeout: 3) {
             wheel.adjust(toPickerWheelValue: value)
@@ -63,7 +75,7 @@ final class Screenshots: XCTestCase {
         try capture("01-day-24h")
         tap("More options")
         tap("Settings")
-        XCTAssertTrue(control("Appearance").waitForExistence(timeout: 15))
+        XCTAssertTrue(control("Appearance").waitForExistence(timeout: 15), app.debugDescription)
         try capture("02-settings")
         chooseTimeFormat("12-hour")
         tap("Back")
