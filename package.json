@@ -17,6 +17,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "check:public": "node scripts/check-public-readiness.mjs",
+    "test:public": "node --test scripts/check-public-readiness.test.mjs server/send-reminders/public-diagnostics.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
