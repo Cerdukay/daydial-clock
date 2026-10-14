@@ -109,3 +109,18 @@ release/
 *.cer
 *.certSigningRequest
 .apple-signing/
+
+# Public-repository hygiene: local credentials, operator notes and diagnostics.
+*.pem
+*.key
+*.dpapi
+.gplay/
+.claude/scheduled_tasks.lock
+/qa-*.png
+/qa-*.txt
+test-results/
+playwright-report/
+blob-report/
+/docs/app-store-release-plan.md
+/docs/app-store-submission-draft.md
+docs/private/
