@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // server/send-reminders/index.mjs
 //
-// Scheduled reminder dispatcher for DayDial. Runs every minute via
-// GitHub Actions (see .github/workflows/send-reminders.yml) against the
-// Neon Postgres database.
+// Reminder dispatcher for Arcelira against the Neon Postgres database.
+// GitHub Actions currently allows manual invocation only; scheduling is paused.
 //
 // This is a plain Node script/handler, NOT tied to any specific paid
 // scheduler platform. Whoever runs it just needs to invoke
@@ -41,6 +40,7 @@
 //   duplicate-send protection.
 
 import pg from "pg";
+import { publicDeliveryError, logPublicResult, logPublicFatal } from "./public-diagnostics.mjs";
 
 const { Pool } = pg;
 
@@ -157,7 +157,7 @@ async function sendFcm(projectId, accessToken, message) {
   });
   if (!res.ok) {
     const text = await res.text();
-    return { success: false, error: text };
+    return { success: false, error: text, status: res.status };
   }
   return { success: true };
 }
@@ -165,11 +165,13 @@ async function sendFcm(projectId, accessToken, message) {
 /** Send with a couple of retries on transient (network/5xx) failures. */
 async function sendFcmWithRetry(projectId, accessToken, message, maxAttempts = 3) {
   let lastError;
+  let lastStatus;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const result = await sendFcm(projectId, accessToken, message);
       if (result.success) return result;
       lastError = result.error;
+      lastStatus = result.status;
       // Don't retry on 4xx (invalid/unregistered token, bad request) --
       // those won't succeed on retry. Only retry on 5xx / thrown errors.
       if (!/"code":\s*5\d\d/.test(result.error ?? "") && attempt === 1) {
@@ -177,12 +179,13 @@ async function sendFcmWithRetry(projectId, accessToken, message, maxAttempts = 3
       }
     } catch (err) {
       lastError = String(err);
+      lastStatus = undefined;
     }
     if (attempt < maxAttempts) {
       await new Promise((r) => setTimeout(r, 250 * attempt));
     }
   }
-  return { success: false, error: lastError };
+  return { success: false, error: lastError, status: lastStatus };
 }
 
 // ---------------------------------------------------------------------------
@@ -354,10 +357,10 @@ export async function runSendReminders() {
           anySucceeded = true;
         } else {
           failed += 1;
-          const detail = `reminder=${reminder.reminder_id} event=${reminder.event_id} user=${reminder.user_id} token=...${token.slice(-6)}: ${String(result.error).slice(0, 300)}`;
+          // Actions logs may be public: never include record IDs, token fragments
+          // or provider text. Keep only an allowlisted, non-identifying code.
+          const detail = publicDeliveryError(result);
           errors.push(detail);
-          // Visible, non-swallowed failure logging (stderr) -- whoever runs
-          // this via cron/CI/serverless logs will see it.
           // eslint-disable-next-line no-console
           console.error(`[send-reminders] FCM send failed: ${detail}`);
         }
@@ -409,15 +412,13 @@ const isDirectRun = (() => {
 if (isDirectRun) {
   runSendReminders()
     .then((result) => {
-      // eslint-disable-next-line no-console
-      console.log(JSON.stringify(result));
+      logPublicResult(result);
       if (!result.ok) {
         process.exitCode = 1;
       }
     })
-    .catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error(`[send-reminders] FATAL: ${err.message ?? err}`);
+    .catch(() => {
+      logPublicFatal();
       process.exitCode = 1;
     });
 }

@@ -97,3 +97,30 @@ release/
 
 # bundletool gibi indirilen araclar
 *.jar
+
+# iOS build output and Apple signing material
+*.ipa
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+*.p12
+*.p8
+*.mobileprovision
+*.cer
+*.certSigningRequest
+.apple-signing/
+
+# Public-repository hygiene: local credentials, operator notes and diagnostics.
+*.pem
+*.key
+*.dpapi
+.gplay/
+.claude/scheduled_tasks.lock
+/qa-*.png
+/qa-*.txt
+test-results/
+playwright-report/
+blob-report/
+/docs/app-store-release-plan.md
+/docs/app-store-submission-draft.md
+docs/private/
